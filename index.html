@@ -3054,55 +3054,46 @@ function parseDate(s){
 }
 // ═══════════════════════════════════════════════════════════════════════
 // DURATION MODEL
-// Durée = heure de fin − heure de début (wall-clock, en heures décimales).
-// Si pas de date de fin → on utilise maintenant (Date.now()).
-// Pas de conversion "jours de service" : 1 jour = 24 h calendar.
-// Affichage (formatDuration) :
-//   < 9 h  → "Xh"        ex: "3h", "8h"
-//   ≥ 9 h  → "jj/hh"    ex: "1j/6h", "5j/0h"
+// Durée = fin − début (heures wall-clock brutes).
+// Si fin absente → minuit du jour courant.
+//
+// Affichage — pivot 1 jour = 9 h de service :
+//   totalH < 9  → "Xh"         (ex: 0h, 3h, 8h)
+//   totalH ≥ 9  → "jj" ou "jj/hh"
+//     jours = floor(totalH / 9)
+//     reste = totalH % 9
+//     si reste = 0 → "Xj" ; sinon → "Xj/Yh"
+//
+// Exemples :
+//   0h  → "0h"   3h → "3h"   9h → "1j"
+//   12h → "1j/3h"   15h → "1j/6h"   20h → "2j/2h"
 // ═══════════════════════════════════════════════════════════════════════
-const WORK_HOURS_PER_DAY = 9;  // seuil affichage heures → jours
+const WORK_HOURS_PER_DAY = 9;
 
-// Retourne la durée en HEURES RÉELLES (nombres décimaux, wall-clock).
-// Pour les dates pures (YYYY-MM-DD) sans heure, on prend minuit → différence
-// en jours calendaires × 24. Pas de minimum artificiel.
 function durationHours(rec){
   if(!rec.startDate) return 0;
   const start = parseDate(rec.startDate);
   if(!start || isNaN(start)) return 0;
-  const end = rec.endDate ? parseDate(rec.endDate) : new Date();
-  if(isNaN(end)) return 0;
-  const wallHours = Math.max(0, (end - start) / 3600000);
-  return wallHours;
-}
-function durationDays(rec){
-  return Math.floor(durationHours(rec) / 24);
+  const now = new Date();
+  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const end = rec.endDate ? parseDate(rec.endDate) : todayMidnight;
+  if(!end || isNaN(end)) return 0;
+  return Math.max(0, (end - start) / 3600000);
 }
 
-// Formate une durée en heures selon la règle : 1 jour = 9 h de service.
-//   < 9 h  → "Xh"         ex: "0h", "3h", "8h"
-//   ≥ 9 h  → "jj/hh"     ex: "1j" (0h reste omis), "1j/3h", "2j/2h"
-//            si heures restantes = 0, on affiche seulement "Xj"
-// Exemples :
-//   0h  → "0h"
-//   3h  → "3h"
-//   9h  → "1j"
-//   12h → "1j/3h"
-//   15h → "1j/6h"
-//   18h → "2j"
-//   20h → "2j/2h"
+function durationDays(rec){
+  return Math.floor(durationHours(rec) / WORK_HOURS_PER_DAY);
+}
+
 function formatDuration(hours){
   if(hours == null || isNaN(hours)) return '—';
-  const totalH = Math.floor(Math.max(0, hours));
-  const hUnit = t('time.hour_unit');  // "h"
-  const dUnit = t('time.day_unit');   // "j"
-  if(totalH < WORK_HOURS_PER_DAY){
-    return `${totalH}${hUnit}`;
-  }
-  const days = Math.floor(totalH / WORK_HOURS_PER_DAY);
-  const remH  = totalH % WORK_HOURS_PER_DAY;
-  if(remH === 0) return `${days}${dUnit}`;
-  return `${days}${dUnit}/${remH}${hUnit}`;
+  const h     = Math.floor(Math.max(0, hours));
+  const hUnit = t('time.hour_unit');
+  const dUnit = t('time.day_unit');
+  if(h < WORK_HOURS_PER_DAY) return `${h}${hUnit}`;
+  const days = Math.floor(h / WORK_HOURS_PER_DAY);
+  const rem  = h % WORK_HOURS_PER_DAY;
+  return rem === 0 ? `${days}${dUnit}` : `${days}${dUnit}/${rem}${hUnit}`;
 }
 // Legacy alias — used by a couple of report contexts. Kept day-based on
 // purpose so the report can still mention "X jours" alongside hours if needed.
@@ -5376,12 +5367,11 @@ function buildReportHTML(options){
   const hUnit = 'h';
   const fmtHours = (n) => {
     if(n == null || isNaN(n)) return '—';
-    const totalH = Math.floor(Math.max(0, n));
-    if(totalH < 9) return `${totalH}${hUnit}`;
-    const days = Math.floor(totalH / 9);
-    const remH  = totalH % 9;
-    if(remH === 0) return `${days}${dUnit}`;
-    return `${days}${dUnit}/${remH}${hUnit}`;
+    const h = Math.floor(Math.max(0, n));
+    if(h < 9) return `${h}${hUnit}`;
+    const days = Math.floor(h / 9);
+    const rem  = h % 9;
+    return rem === 0 ? `${days}${dUnit}` : `${days}${dUnit}/${rem}${hUnit}`;
   };
   const deptLabelLocal = (dept) => {
     if(!dept) return I18N[reportLang]['dept.AUTRE'] || dept;
