@@ -640,12 +640,13 @@
     border-left:3px solid var(--col-bg);
     border-radius:10px;
     padding:12px 12px 11px;
-    transition:transform .15s,border-color .15s;
+    transition:transform .15s,border-color .15s,box-shadow .15s;
     cursor:pointer;
   }
   .kanban-card:hover{
-    transform:translateY(-1px);
+    transform:translateY(-2px);
     border-color:var(--border-2);
+    box-shadow:var(--shadow-2);
   }
   .kanban-card-top{
     display:flex;
@@ -1824,6 +1825,124 @@
   }
   [data-theme="dark"] .nav-item--accent:hover{color:#0a0e1a}
   .nav-item--accent:hover .nav-icon{color:inherit}
+
+  /* ─────────────────────────────────────────────────────────────────
+     TASK DETAIL DRAWER (Kanban click)
+     ───────────────────────────────────────────────────────────────── */
+  .drawer-overlay{
+    position:fixed;inset:0;
+    background:rgba(0,0,0,.45);
+    backdrop-filter:blur(3px);
+    -webkit-backdrop-filter:blur(3px);
+    z-index:900;
+    opacity:0;pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .drawer-overlay.is-open{opacity:1;pointer-events:all}
+  .drawer{
+    position:fixed;
+    top:0;right:0;bottom:0;
+    width:min(420px,100vw);
+    background:var(--bg-1);
+    border-left:1px solid var(--border-1);
+    box-shadow:-12px 0 40px rgba(0,0,0,.35);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);
+    transition:transform .3s cubic-bezier(.16,1,.3,1);
+    z-index:901;
+    overflow:hidden;
+  }
+  .drawer-overlay.is-open .drawer{transform:translateX(0)}
+  .drawer-header{
+    padding:18px 20px 14px;
+    border-bottom:1px solid var(--border-1);
+    display:flex;align-items:flex-start;gap:12px;
+  }
+  .drawer-status-bar{
+    width:4px;border-radius:2px;flex-shrink:0;
+    align-self:stretch;min-height:40px;
+    background:var(--drawer-color,var(--accent));
+  }
+  .drawer-header-body{flex:1;min-width:0}
+  .drawer-id{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;font-weight:600;
+    color:var(--fg-3);letter-spacing:.04em;
+    margin-bottom:4px;
+  }
+  .drawer-title{
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-size:17px;font-weight:700;
+    color:var(--fg-1);letter-spacing:-.01em;
+    line-height:1.35;
+  }
+  .drawer-close{
+    width:30px;height:30px;
+    border-radius:7px;
+    border:1px solid var(--border-1);
+    background:var(--bg-2);
+    color:var(--fg-2);
+    cursor:pointer;
+    display:grid;place-items:center;
+    flex-shrink:0;
+    transition:all .15s;
+  }
+  .drawer-close:hover{color:var(--fg-1);background:var(--bg-3)}
+  .drawer-body{
+    flex:1;overflow-y:auto;
+    padding:18px 20px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .drawer-badge-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .drawer-section{
+    background:var(--bg-2);
+    border:1px solid var(--border-1);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .drawer-section-title{
+    font-size:10px;font-weight:700;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--fg-3);
+    padding:10px 14px 6px;
+  }
+  .drawer-row{
+    display:flex;align-items:center;
+    padding:9px 14px;
+    border-top:1px solid var(--border-1);
+    gap:10px;font-size:13px;color:var(--fg-2);
+  }
+  .drawer-row:first-of-type{border-top:none}
+  .drawer-row-icon{
+    width:16px;height:16px;flex-shrink:0;
+    color:var(--fg-3);
+  }
+  .drawer-row-label{color:var(--fg-3);font-size:11.5px;min-width:90px;flex-shrink:0}
+  .drawer-row-val{color:var(--fg-1);font-weight:500;flex:1}
+  .drawer-row-val.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+  .drawer-dur-big{
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-size:28px;font-weight:700;
+    color:var(--drawer-color,var(--accent));
+    letter-spacing:-.02em;
+    padding:14px;
+    display:flex;align-items:baseline;gap:6px;
+  }
+  .drawer-dur-big small{font-size:13px;font-weight:500;color:var(--fg-3)}
+  .drawer-footer{
+    padding:14px 20px;
+    border-top:1px solid var(--border-1);
+    display:flex;gap:8px;
+  }
+  .drawer-footer-btn{
+    flex:1;padding:10px;border-radius:9px;
+    font-size:13px;font-weight:600;
+    cursor:pointer;transition:all .15s;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    border:1px solid var(--border-2);
+    background:var(--bg-2);color:var(--fg-1);
+  }
+  .drawer-footer-btn:hover{background:var(--bg-3);border-color:var(--accent);color:var(--accent)}
+  .drawer-footer-btn svg{width:14px;height:14px}
 </style>
 </head>
 <body>
@@ -2218,6 +2337,75 @@
   </main>
 </div>
 
+<!-- Task detail drawer — opened when clicking a Kanban card -->
+<div class="drawer-overlay" id="taskDrawerOverlay">
+  <div class="drawer" id="taskDrawer">
+    <div class="drawer-header">
+      <div class="drawer-status-bar" id="drawerStatusBar"></div>
+      <div class="drawer-header-body">
+        <div class="drawer-id" id="drawerIdLabel"></div>
+        <div class="drawer-title" id="drawerTitle"></div>
+      </div>
+      <button class="drawer-close" id="drawerClose" aria-label="Fermer">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="drawer-body">
+      <div class="drawer-badge-row" id="drawerBadges"></div>
+      <div class="drawer-section">
+        <div class="drawer-dur-big" id="drawerDuration"></div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Détails</div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          <span class="drawer-row-label">Équipement</span>
+          <span class="drawer-row-val mono" id="drawerEquipId"></span>
+        </div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          <span class="drawer-row-label">Catégorie</span>
+          <span class="drawer-row-val" id="drawerCategory"></span>
+        </div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="drawer-row-label">Service</span>
+          <span class="drawer-row-val" id="drawerDept"></span>
+        </div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          <span class="drawer-row-label">Localisation</span>
+          <span class="drawer-row-val" id="drawerLocation"></span>
+        </div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          <span class="drawer-row-label">Technicien</span>
+          <span class="drawer-row-val" id="drawerTech"></span>
+        </div>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Période</div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="drawer-row-label">Début</span>
+          <span class="drawer-row-val mono" id="drawerStart"></span>
+        </div>
+        <div class="drawer-row">
+          <svg class="drawer-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span class="drawer-row-label">Fin</span>
+          <span class="drawer-row-val mono" id="drawerEnd"></span>
+        </div>
+      </div>
+    </div>
+    <div class="drawer-footer">
+      <button class="drawer-footer-btn" id="drawerFilterBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+        Voir toutes les interventions
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- Report configuration modal — opened from the "Generate report" sidebar button -->
 <div class="modal-overlay" id="reportModal" role="dialog" aria-modal="true" aria-labelledby="reportModalTitle">
   <div class="modal" role="document">
@@ -2571,29 +2759,28 @@ function parseDate(s){
 // ═══════════════════════════════════════════════════════════════════════
 const WORK_HOURS_PER_DAY = 9;
 
-// Returns duration in TOTAL WORKING HOURS (integer).
-// For pure-date ranges: each calendar day spanned counts as 9 working hours.
-// For datetime ranges: actual elapsed hours are pro-rated to working hours
-//   (wall_hours × 9/24).
+// Returns duration in TOTAL WORKING HOURS.
+// For pure-date ranges (YYYY-MM-DD):
+//   calDays = (end - start) in calendar days + 1, minimum 1 (same-day = 1 j)
+//   hours   = calDays * 9
+// For datetime ranges: wall-clock hours × (9/24), minimum 9h.
 function durationHours(rec){
   if(!rec.startDate) return 0;
   const start = parseDate(rec.startDate);
   const end = rec.endDate ? parseDate(rec.endDate) : new Date();
   if(!start || isNaN(start)) return 0;
-  const wallHours = Math.max(0, (end - start) / 3_600_000);
-  // If both endpoints look like pure dates (no time component) we work in
-  // whole calendar days × WORK_HOURS_PER_DAY for clean "Xj" output.
   const isPureStart = /^\d{4}-\d{2}-\d{2}$/.test(rec.startDate);
   const isPureEnd   = !rec.endDate || /^\d{4}-\d{2}-\d{2}$/.test(rec.endDate);
   if(isPureStart && isPureEnd){
-    const calDays = Math.round(wallHours / 24);
+    const s = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const e = new Date(end.getFullYear(),   end.getMonth(),   end.getDate());
+    const calDays = Math.max(1, Math.round((e - s) / 86400000) + 1);
     return calDays * WORK_HOURS_PER_DAY;
   }
-  // Mixed/datetime: convert wall hours → working hours linearly
-  return Math.round(wallHours * WORK_HOURS_PER_DAY / 24);
+  const wallHours = Math.max(0, (end - start) / 3600000);
+  return Math.max(WORK_HOURS_PER_DAY, Math.round(wallHours * WORK_HOURS_PER_DAY / 24));
 }
 function durationDays(rec){
-  // Working days: hours / 9
   return Math.round(durationHours(rec) / WORK_HOURS_PER_DAY);
 }
 // Format a working-hours duration as "Xj Yh" / "Zh" using the 9h-day basis.
@@ -2603,24 +2790,24 @@ function durationDays(rec){
 //   10h → "1j 1h"
 //   45h → "5j"
 //   50h → "5j 5h"
-// Format a working-hours duration as "Xj Yh" (days + remaining hours on a 9h/day basis)
-// or just "Xj" / "Yh" when one component is zero.
+// Format a working-hours duration as "Xj Yh" / "Xj" / "Yh" (9h = 1 working day).
+// With pure-date data, durationHours() always returns multiples of 9, so the
+// hours remainder is always 0 and the display is simply "Xj". With datetime
+// data the remainder can be non-zero and both parts are shown.
 // Examples (WORK_HOURS_PER_DAY = 9):
 //   0h   → "< 1 h"
-//   2h   → "2 h"
 //   9h   → "1 j"
-//   10h  → "1 j 1 h"
-//   45h  → "5 j"
-//   47h  → "5 j 2 h"
-//   1800h→ "200 j"
+//   18h  → "2 j"
+//   10h  → "1 j 1 h"   (datetime only)
+//   47h  → "5 j 2 h"   (datetime only)
 function formatDuration(hours){
   if(hours == null || isNaN(hours)) return '—';
   const h = Math.max(0, Math.round(hours));
   if(h === 0) return t('time.less_than_hour');
+  const dUnit = t('time.day_unit');
+  const hUnit = t('time.hour_unit');
   const days = Math.floor(h / WORK_HOURS_PER_DAY);
   const remH  = h % WORK_HOURS_PER_DAY;
-  const dUnit = t('time.day_unit');   // "j" / "d"
-  const hUnit = t('time.hour_unit');  // "h"
   if(days > 0 && remH > 0) return `${days}\u00A0${dUnit} ${remH}\u00A0${hUnit}`;
   if(days > 0)              return `${days}\u00A0${dUnit}`;
   return `${remH}\u00A0${hUnit}`;
@@ -3593,8 +3780,8 @@ function renderKanban(){
   board.innerHTML = cols.map(col => {
     const cards = filtered.filter(r => r.kanbanKey === col.key)
                           .sort((a,b) => b.duration - a.duration);
-    const cardsHTML = cards.map(r => `
-      <div class="kanban-card" style="--col-bg:${col.color};--col-bg-strong:${col.color}">
+    const cardsHTML = cards.map((r, idx) => `
+      <div class="kanban-card" style="--col-bg:${col.color};--col-bg-strong:${col.color}" data-card-sig="${escapeHTML(recordSig(r))}">
         <div class="kanban-card-top">
           <span class="kanban-card-id">#${escapeHTML(r.id)}</span>
           <span class="kanban-card-cat">${escapeHTML(r.category === 'AUTRE' ? deptLabel(r.department) : r.category)}</span>
@@ -3623,6 +3810,17 @@ function renderKanban(){
       </div>
     `;
   }).join('');
+
+  // Wire card clicks via delegation — remove any prior handler first to avoid stacking
+  if(board._cardClickHandler) board.removeEventListener('click', board._cardClickHandler);
+  board._cardClickHandler = e => {
+    const card = e.target.closest('[data-card-sig]');
+    if(!card) return;
+    const sig = card.dataset.cardSig;
+    const rec = DATA.find(r => recordSig(r) === sig);
+    if(rec) openTaskDrawer(rec);
+  };
+  board.addEventListener('click', board._cardClickHandler);
 }
 // Location filter wiring — keep stable since elements pre-exist in HTML
 document.querySelectorAll('[data-loc-filter]').forEach(btn => {
@@ -5347,6 +5545,90 @@ function wireReportModal(){
     generateReport(options);
   });
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   TASK DETAIL DRAWER
+   ════════════════════════════════════════════════════════════════════ */
+const STATUS_CSS_COLOR_HEX = {
+  maintenance:  '#f59e0b',
+  waiting_parts:'#ef4444',
+  checking:     '#3b82f6',
+  completed:    '#10b981',
+  offline:      '#a855f7',
+};
+
+function openTaskDrawer(record){
+  const overlay  = document.getElementById('taskDrawerOverlay');
+  const colorHex = STATUS_CSS_COLOR_HEX[record.kanbanKey] || '#22d3ee';
+  const meta     = statusMeta(record.statusKey);
+
+  // Status bar color
+  document.getElementById('drawerStatusBar').style.background = colorHex;
+  overlay.style.setProperty('--drawer-color', colorHex);
+
+  // Header
+  document.getElementById('drawerIdLabel').textContent  = `#${record.id} · ${record.category}`;
+  document.getElementById('drawerTitle').textContent    = record.task || t('no_description');
+
+  // Badges row
+  const loc = LANG === 'fr' ? 'fr-FR' : 'en-GB';
+  document.getElementById('drawerBadges').innerHTML = `
+    <span class="badge badge--${meta.color}">${escapeHTML(meta.short)}</span>
+    ${record.priority && record.priority !== 'NORMALE'
+      ? `<span class="badge badge--muted">${escapeHTML(record.priority)}</span>` : ''}
+  `;
+
+  // Duration
+  const days = durationDays(record);
+  const hrs  = record.durationHours;
+  const dUnit = t('time.day_unit');
+  const hUnit = t('time.hour_unit');
+  const durStr = formatDuration(hrs);
+  document.getElementById('drawerDuration').innerHTML =
+    `<span style="color:${colorHex}">${escapeHTML(durStr)}</span>
+     <small>· ${hrs}\u00A0${hUnit} ${LANG === 'fr' ? 'de service' : 'service hours'}</small>`;
+
+  // Detail rows
+  document.getElementById('drawerEquipId').textContent   = record.id;
+  document.getElementById('drawerCategory').textContent  = record.category;
+  document.getElementById('drawerDept').textContent      = deptLabel(record.department);
+  document.getElementById('drawerLocation').textContent  = record.location;
+  document.getElementById('drawerTech').textContent      = techDisplay(record.technician);
+
+  const fmtDate = d => {
+    if(!d) return LANG === 'fr' ? '—' : '—';
+    const p = parseDate(d);
+    return p ? dateFmtShort.format(p) : d;
+  };
+  document.getElementById('drawerStart').textContent = record.startDate ? fmtDate(record.startDate) : (LANG === 'fr' ? 'Non renseigné' : 'Not set');
+  document.getElementById('drawerEnd').textContent   = record.endDate   ? fmtDate(record.endDate)   : (LANG === 'fr' ? 'En cours' : 'Ongoing');
+
+  // Footer filter button
+  document.getElementById('drawerFilterBtn').onclick = () => {
+    closeTaskDrawer();
+    setExtraFilter({ kind: 'equipment', value: record.id });
+  };
+
+  overlay.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeTaskDrawer(){
+  const overlay = document.getElementById('taskDrawerOverlay');
+  overlay.classList.remove('is-open');
+  document.body.style.overflow = '';
+}
+
+// Wire close handlers once
+document.getElementById('drawerClose').addEventListener('click', closeTaskDrawer);
+document.getElementById('taskDrawerOverlay').addEventListener('click', e => {
+  if(e.target === document.getElementById('taskDrawerOverlay')) closeTaskDrawer();
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape' && document.getElementById('taskDrawerOverlay').classList.contains('is-open')){
+    closeTaskDrawer();
+  }
+});
 
 wireReportModal();
 
