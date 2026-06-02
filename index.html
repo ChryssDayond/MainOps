@@ -2603,25 +2603,27 @@ function durationDays(rec){
 //   10h → "1j 1h"
 //   45h → "5j"
 //   50h → "5j 5h"
-// Format a duration as a number of WORKING HOURS — always in "Nh" form.
-// The underlying calculation still uses 9 h/working day, so a 5-calendar-day
-// task yields 45 h, a 1-day task yields 9 h, etc.
-// Examples:
-//   0    → "< 1 h"
+// Format a working-hours duration as "Xj Yh" (days + remaining hours on a 9h/day basis)
+// or just "Xj" / "Yh" when one component is zero.
+// Examples (WORK_HOURS_PER_DAY = 9):
+//   0h   → "< 1 h"
 //   2h   → "2 h"
-//   9h   → "9 h"
-//   45h  → "45 h"
-//   1800h → "1 800 h"
+//   9h   → "1 j"
+//   10h  → "1 j 1 h"
+//   45h  → "5 j"
+//   47h  → "5 j 2 h"
+//   1800h→ "200 j"
 function formatDuration(hours){
   if(hours == null || isNaN(hours)) return '—';
   const h = Math.max(0, Math.round(hours));
   if(h === 0) return t('time.less_than_hour');
-  // Use non-breaking space between number and unit for proper typography,
-  // plus a thin space as thousands separator above 999.
-  const formatted = h >= 1000
-    ? h.toLocaleString(LANG === 'fr' ? 'fr-FR' : 'en-GB')
-    : String(h);
-  return `${formatted}\u00A0${t('time.hour_unit')}`;
+  const days = Math.floor(h / WORK_HOURS_PER_DAY);
+  const remH  = h % WORK_HOURS_PER_DAY;
+  const dUnit = t('time.day_unit');   // "j" / "d"
+  const hUnit = t('time.hour_unit');  // "h"
+  if(days > 0 && remH > 0) return `${days}\u00A0${dUnit} ${remH}\u00A0${hUnit}`;
+  if(days > 0)              return `${days}\u00A0${dUnit}`;
+  return `${remH}\u00A0${hUnit}`;
 }
 // Legacy alias — used by a couple of report contexts. Kept day-based on
 // purpose so the report can still mention "X jours" alongside hours if needed.
@@ -4284,6 +4286,22 @@ function pushNotification(record){
     record,
     ts: Date.now(),
     read: false,
+    type: 'new_task',
+  });
+  if(notifications.length > MAX_NOTIFS) notifications.length = MAX_NOTIFS;
+  renderNotifBadge();
+  renderNotifList();
+}
+
+function pushStatusChangeNotification(record, fromLabel, toLabel){
+  notifications.unshift({
+    id: `n${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+    record,
+    ts: Date.now(),
+    read: false,
+    type: 'status_change',
+    fromLabel,
+    toLabel,
   });
   if(notifications.length > MAX_NOTIFS) notifications.length = MAX_NOTIFS;
   renderNotifBadge();
@@ -4322,14 +4340,22 @@ function renderNotifList(){
   list.innerHTML = notifications.map(n => {
     const r = n.record;
     const meta = statusMeta(r.statusKey);
+    const isStatusChange = n.type === 'status_change';
+    const iconPath = isStatusChange
+      ? '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'
+      : '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>';
+    const subtitle = isStatusChange
+      ? `#${escapeHTML(r.id)} — ${escapeHTML(n.fromLabel)} → ${escapeHTML(n.toLabel)}`
+      : `${escapeHTML(r.task || t('no_description'))} — ${escapeHTML(r.category)} · ${escapeHTML(r.location)}`;
+    const titleKey = isStatusChange ? 'Statut modifié' : t('notif.new_task.title');
     return `
       <div class="notif-item ${n.read ? '' : 'is-unread'}">
         <div class="notif-item-icon" style="background:var(--${meta.color}-bg);color:var(--${meta.color})">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${iconPath}</svg>
         </div>
         <div class="notif-item-body">
-          <div class="notif-item-title">${t('notif.new_task.title')} · #${escapeHTML(r.id)}</div>
-          <div class="notif-item-meta">${escapeHTML(r.task || t('no_description'))} — ${escapeHTML(r.category)} · ${escapeHTML(r.location)}</div>
+          <div class="notif-item-title">${escapeHTML(titleKey)} · #${escapeHTML(r.id)}</div>
+          <div class="notif-item-meta">${subtitle}</div>
           <div class="notif-item-time">${relativeTime(n.ts)}</div>
         </div>
       </div>`;
@@ -4381,6 +4407,7 @@ let lastChecksum = '';
 let initialLoadDone = false;
 let isOnline = true;
 let knownSignatures = new Set();
+let refreshInProgress = false;  // guard against concurrent refresh calls
 
 // Build a stable signature for a record so we can detect "new" rows on each poll
 function recordSig(r){
@@ -4519,6 +4546,9 @@ function rerenderAll(){
 async function refreshLive(){
   // Skip refresh if the tab is hidden — Chrome throttles anyway, plus saves bandwidth.
   if(document.hidden) return;
+  // Prevent overlapping concurrent fetches (can happen on tab restore + interval firing together)
+  if(refreshInProgress) return;
+  refreshInProgress = true;
   try {
     const url = LIVE_CSV_URL + '&_t=' + Date.now();  // cache-bust
     const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
@@ -4528,8 +4558,11 @@ async function refreshLive(){
     const records = normalizeCsvRows(rows);
     if(records.length === 0) throw new Error('Empty CSV');
 
-    // Quick checksum to skip work when nothing changed
-    const checksum = records.length + ':' + records[records.length-1].id + ':' + records[records.length-1].task.length;
+    // Full-content checksum: captures every id+status+startDate+endDate so that
+    // a status change on any row (e.g. maintenance → completed) is always detected.
+    const checksum = records.map(r =>
+      `${r.id}|${r.statusKey}|${r.startDate||''}|${r.endDate||''}|${r.task.length}`
+    ).join(';');
     const wasOffline = !isOnline;
     isOnline = true;
 
@@ -4548,11 +4581,22 @@ async function refreshLive(){
 
     // Detect new records (anything with a signature we haven't seen)
     const fresh = [];
+    // Detect status changes on existing records
+    const statusChanged = [];
+    // Build a map of current known records by id for fast lookup
+    const prevById = new Map();
+    DATA.forEach(r => prevById.set(r.id + '|' + (r.startDate||''), r));
+
     records.forEach(r => {
       const sig = recordSig(r);
       if(!knownSignatures.has(sig)){
         fresh.push(r);
         knownSignatures.add(sig);
+      }
+      // Detect status changes on already-known records
+      const prev = prevById.get(r.id + '|' + (r.startDate||''));
+      if(prev && prev.statusKey !== r.statusKey && initialLoadDone){
+        statusChanged.push({ record: r, from: prev.statusKey, to: r.statusKey });
       }
     });
 
@@ -4561,8 +4605,13 @@ async function refreshLive(){
     rerenderAll();
     updateLiveIndicator('live');
 
+    // Mark as loaded BEFORE pushing notifications so the first live fetch
+    // can already trigger alerts for genuinely new rows.
+    const wasFirstLoad = !initialLoadDone;
+    initialLoadDone = true;
+
     // Push notifications for genuinely new tasks (only after first successful load)
-    if(initialLoadDone && fresh.length > 0){
+    if(!wasFirstLoad && fresh.length > 0){
       fresh.forEach(pushNotification);
       // One consolidated toast (per spec — "Nouvelle tâche ajoutée")
       showToast({
@@ -4577,7 +4626,29 @@ async function refreshLive(){
         try { new Notification(t('toast.new_task.title'), { body: `#${fresh[0].id} — ${fresh[0].task}` }); } catch {}
       }
     }
-    initialLoadDone = true;
+
+    // Notify status changes on existing records
+    if(!wasFirstLoad && statusChanged.length > 0){
+      statusChanged.forEach(({ record, from, to }) => {
+        const fromLabel = t(`status.${from}.short`) || from;
+        const toLabel   = t(`status.${to}.short`) || to;
+        pushStatusChangeNotification(record, fromLabel, toLabel);
+      });
+      if(statusChanged.length === 1){
+        const { record, from, to } = statusChanged[0];
+        showToast({
+          title: `#${record.id} — ${t('status_changed') || 'Statut mis à jour'}`,
+          message: `${t(`status.${from}.short`)||from} → ${t(`status.${to}.short`)||to}`,
+          type: 'info',
+        });
+      } else {
+        showToast({
+          title: t('status_changed') || 'Statuts mis à jour',
+          message: `${statusChanged.length} ${t('count.interventions')}`,
+          type: 'info',
+        });
+      }
+    }
   } catch(err){
     if(isOnline){
       isOnline = false;
@@ -4590,6 +4661,8 @@ async function refreshLive(){
       });
     }
     console.warn('[live] refresh failed:', err.message);
+  } finally {
+    refreshInProgress = false;
   }
 }
 
@@ -4602,10 +4675,13 @@ function stopLiveRefresh(){
   if(liveTimer){ clearInterval(liveTimer); liveTimer = null; }
 }
 
-// Pause polling when tab hidden, resume when visible
+// Pause polling when tab hidden, resume when visible — with a small debounce
+// so the on-resume call doesn't collide with an interval tick already queued.
+let visibilityDebounce = null;
 document.addEventListener('visibilitychange', () => {
   if(document.hidden) return;
-  refreshLive();  // immediate refresh on resume
+  clearTimeout(visibilityDebounce);
+  visibilityDebounce = setTimeout(refreshLive, 200);  // 200 ms lets any in-flight interval tick finish first
 });
 
 /* ════════════════════════════════════════════════════════════════════
@@ -4639,13 +4715,17 @@ function buildReportHTML(options){
 
   // Local hour formatter, since formatDuration() reads global LANG.
   // For the report we want output in the chosen reportLang regardless.
-  const unit = isFR ? 'h' : 'h';
+  const dUnit = isFR ? 'j' : 'd';
+  const hUnit = 'h';
   const fmtHours = (n) => {
     if(n == null || isNaN(n)) return '—';
     const h = Math.max(0, Math.round(n));
-    if(h === 0) return '< 1 h';
-    const f = h >= 1000 ? h.toLocaleString(isFR ? 'fr-FR' : 'en-GB') : String(h);
-    return `${f}\u00A0${unit}`;
+    if(h === 0) return isFR ? '< 1 h' : '< 1 h';
+    const days = Math.floor(h / 9);  // 1 working day = 9 h
+    const remH  = h % 9;
+    if(days > 0 && remH > 0) return `${days}\u00A0${dUnit} ${remH}\u00A0${hUnit}`;
+    if(days > 0)              return `${days}\u00A0${dUnit}`;
+    return `${h}\u00A0${hUnit}`;
   };
   const deptLabelLocal = (dept) => {
     if(!dept) return I18N[reportLang]['dept.AUTRE'] || dept;
