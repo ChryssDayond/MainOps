@@ -1946,8 +1946,111 @@
     color:#fff;
   }
 
-  /* Footer with action buttons */
-  .modal-foot{
+  .report-lang-choice{
+    display:flex;flex-wrap:wrap;gap:8px;
+  }
+  .lang-chip{
+    padding:10px 16px;
+    font-size:13px;
+    display:inline-flex;align-items:center;gap:10px;
+  }
+  .lang-chip .lang-code{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:11px;
+    letter-spacing:.05em;
+    padding:2px 6px;
+    background:var(--bg-1);
+    border-radius:4px;
+    color:var(--fg-2);
+    transition:all .15s;
+  }
+  .lang-chip.is-active .lang-code{
+    background:rgba(255,255,255,.22);
+    color:#fff;
+  }
+
+  /* Equipment filter */
+  .report-equip-wrap{position:relative}
+  .report-equip-search{
+    position:relative;
+    display:flex;align-items:center;
+  }
+  .report-equip-search svg{
+    position:absolute;left:11px;
+    width:14px;height:14px;color:var(--fg-3);pointer-events:none;
+  }
+  .report-equip-input{
+    width:100%;
+    padding:9px 36px 9px 34px;
+    font:inherit;font-size:13px;
+    background:var(--bg-2);color:var(--fg-1);
+    border:1px solid var(--border-1);border-radius:9px;
+    transition:all .15s;
+  }
+  .report-equip-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .report-equip-input::placeholder{color:var(--fg-3)}
+  .report-equip-clear{
+    position:absolute;right:9px;
+    width:20px;height:20px;border-radius:5px;
+    background:var(--bg-3);border:none;
+    color:var(--fg-3);cursor:pointer;
+    display:none;place-items:center;
+    transition:all .15s;
+  }
+  .report-equip-clear:hover{color:var(--fg-1)}
+  .report-equip-clear svg{width:10px;height:10px}
+  .report-equip-clear.is-visible{display:grid}
+  .report-equip-dropdown{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;
+    background:var(--bg-1);
+    border:1px solid var(--border-1);
+    border-radius:10px;
+    box-shadow:var(--shadow-2);
+    max-height:200px;overflow-y:auto;
+    z-index:200;
+    display:none;
+  }
+  .report-equip-dropdown.is-open{display:block}
+  .report-equip-option{
+    padding:9px 14px;
+    font-size:13px;color:var(--fg-1);
+    cursor:pointer;
+    display:flex;align-items:center;gap:10px;
+    transition:background .1s;
+  }
+  .report-equip-option:hover{background:var(--bg-2)}
+  .report-equip-option.is-selected{background:var(--accent-glow);color:var(--accent)}
+  .report-equip-option-id{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;font-size:11px;
+    color:var(--accent);
+    background:color-mix(in srgb,var(--accent) 10%,transparent);
+    padding:2px 7px;border-radius:5px;
+    flex-shrink:0;
+  }
+  .report-equip-option-cat{font-size:11px;color:var(--fg-3)}
+  .report-equip-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--accent-glow);color:var(--accent);
+    border:1px solid var(--accent);
+    border-radius:7px;padding:5px 10px;
+    font-size:12px;font-weight:600;
+    margin-top:8px;
+  }
+  .report-equip-chip button{
+    background:none;border:none;cursor:pointer;
+    color:var(--accent);opacity:.7;
+    padding:0;display:grid;place-items:center;
+    line-height:1;
+  }
+  .report-equip-chip button:hover{opacity:1}
+  .report-equip-chip svg{width:11px;height:11px}
+  .report-equip-hint{
+    font-size:11.5px;color:var(--fg-3);
+    margin-top:6px;display:flex;align-items:center;gap:5px;
+  }
+  .report-equip-hint svg{width:12px;height:12px;flex-shrink:0}
     display:flex;
     justify-content:flex-end;
     gap:10px;
@@ -2780,6 +2883,28 @@
             <span class="lang-code">EN</span>
             <span data-i18n="report.modal.lang_en">English</span>
           </button>
+        </div>
+      </section>
+
+      <!-- 4. EQUIPMENT FILTER -->
+      <section class="modal-section">
+        <div class="modal-section-head">
+          <h3>Filtrer par équipement <span style="font-weight:400;color:var(--fg-3);font-size:12px">(optionnel)</span></h3>
+        </div>
+        <div class="report-equip-wrap">
+          <div class="report-equip-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="report-equip-input" id="reportEquipInput" type="text" autocomplete="off" spellcheck="false" placeholder="Rechercher un ID ou une catégorie…" />
+            <button class="report-equip-clear" id="reportEquipClear" aria-label="Effacer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div class="report-equip-dropdown" id="reportEquipDropdown"></div>
+          <div id="reportEquipSelected"></div>
+          <div class="report-equip-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Sans sélection, le rapport couvre tous les équipements.
+          </div>
         </div>
       </section>
 
@@ -5410,18 +5535,20 @@ function buildReportHTML(options){
   // startDate falls within the range.
   const rStart = range.start ? parseDate(range.start) : null;
   const rEnd   = range.end   ? parseDate(range.end)   : null;
-  // For end-of-day inclusivity, push rEnd to 23:59:59
   if(rEnd) rEnd.setHours(23, 59, 59, 999);
   const inRange = (r) => {
     if(!rStart && !rEnd) return true;
-    if(!r.startDate) return false;  // can't position it on the time axis
+    if(!r.startDate) return false;
     const s = parseDate(r.startDate);
     if(!s) return false;
     if(rStart && s < rStart) return false;
     if(rEnd   && s > rEnd)   return false;
     return true;
   };
-  const FILTERED = DATA.filter(inRange);
+
+  // Apply equipment filter if set
+  const equipId = opts.equipmentFilter || null;
+  const FILTERED = DATA.filter(r => inRange(r) && (!equipId || r.id === equipId));
   // Rebuild equipment rollup over the filtered subset so the ranking section
   // reflects the requested period.
   const equipRollup = buildEquipmentRollup(FILTERED);
@@ -5749,11 +5876,12 @@ function buildReportHTML(options){
 <div class="doc">
   <header class="doc-head">
     <div>
-      <h1>${L('Rapport de maintenance','Maintenance Report')}</h1>
+      <h1>${L('Rapport de maintenance','Maintenance Report')}${equipId ? ` — #${equipId}` : ''}</h1>
       <div class="meta">
         ${L('Site','Site')} : <strong>KCC</strong><br>
         ${L('Édité le','Issued on')} : ${dateFmt.format(now)} ${L('à','at')} ${timeFmt.format(now)}<br>
         ${L('Période couverte','Period covered')} : ${periodLabel}<br>
+        ${equipId ? `${L('Équipement','Equipment')} : <strong>#${equipId}</strong>${(() => { const r = DATA.find(x => x.id === equipId); return r ? ` — ${r.category}` : ''; })()}<br>` : ''}
         <em style="color:#94a3b8;font-size:11.5px">${L('Base de calcul : 1 jour ouvré = 9 h','Calculation basis: 1 working day = 9 h')}</em>
       </div>
     </div>
@@ -5825,17 +5953,18 @@ const REPORT_SECTIONS = ['summary','kpis','active','ranking','depts','locations'
 let reportModalState = {
   sections: REPORT_SECTIONS.reduce((o, k) => (o[k] = true, o), {}),
   periodPreset: 'all',     // 'all' | '30' | '90' | '365' | 'custom'
-  dateStart: null,         // ISO date string when in custom mode
+  dateStart: null,
   dateEnd:   null,
-  lang: null,              // null = follow current UI language at open time
+  lang: null,
+  equipmentFilter: null,   // null = all equipment | string = specific equipment ID
 };
 
 function openReportModal(){
-  // Initialise lang to current UI language if it's the first time
   if(reportModalState.lang == null) reportModalState.lang = LANG;
   renderReportCheckboxes();
   renderReportPeriod();
   renderReportLangButtons();
+  renderReportEquipFilter();
   document.getElementById('reportModal').classList.add('is-open');
   document.body.style.overflow = 'hidden';
 }
@@ -5932,11 +6061,109 @@ function updateReportGenerateBtn(){
   btn.title = anyChecked ? '' : t('report.modal.no_section');
 }
 
+/* ── Equipment filter for report modal ── */
+function renderReportEquipFilter(){
+  const input    = document.getElementById('reportEquipInput');
+  const clearBtn = document.getElementById('reportEquipClear');
+  const selected = document.getElementById('reportEquipSelected');
+  if(!input) return;
+
+  // Reflect current state
+  if(reportModalState.equipmentFilter){
+    const eq = reportModalState.equipmentFilter;
+    input.value = '';
+    clearBtn.classList.remove('is-visible');
+    // Show selected chip
+    const rec = DATA.find(r => r.id === eq);
+    const cat = rec ? rec.category : '';
+    selected.innerHTML = `
+      <div class="report-equip-chip">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        #${escapeHTML(eq)}${cat ? ` — ${escapeHTML(cat)}` : ''}
+        <button id="reportEquipRemove" aria-label="Retirer le filtre">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    document.getElementById('reportEquipRemove')?.addEventListener('click', () => {
+      reportModalState.equipmentFilter = null;
+      renderReportEquipFilter();
+    });
+  } else {
+    selected.innerHTML = '';
+  }
+}
+
+function buildEquipSuggestions(query){
+  // Build unique list of {id, category} sorted by id
+  const seen = new Map();
+  DATA.forEach(r => {
+    if(!r.id) return;
+    if(!seen.has(r.id)) seen.set(r.id, r.category);
+  });
+  const all = Array.from(seen.entries())
+    .map(([id, cat]) => ({ id, cat }))
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric:true }));
+
+  if(!query) return all.slice(0, 40); // show first 40 when empty
+  const q = query.toLowerCase();
+  return all.filter(e =>
+    e.id.toLowerCase().includes(q) || e.cat.toLowerCase().includes(q)
+  ).slice(0, 30);
+}
+
+function wireReportEquipFilter(){
+  const input    = document.getElementById('reportEquipInput');
+  const clearBtn = document.getElementById('reportEquipClear');
+  const dropdown = document.getElementById('reportEquipDropdown');
+  if(!input || !dropdown) return;
+
+  function showDropdown(query){
+    const items = buildEquipSuggestions(query);
+    if(items.length === 0){
+      dropdown.innerHTML = `<div class="report-equip-option" style="color:var(--fg-3);cursor:default">Aucun résultat</div>`;
+    } else {
+      dropdown.innerHTML = items.map(e => `
+        <div class="report-equip-option ${reportModalState.equipmentFilter === e.id ? 'is-selected' : ''}" data-equip-id="${escapeHTML(e.id)}">
+          <span class="report-equip-option-id">${escapeHTML(e.id)}</span>
+          <span class="report-equip-option-cat">${escapeHTML(e.cat)}</span>
+        </div>`).join('');
+      dropdown.querySelectorAll('[data-equip-id]').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.dataset.equipId;
+          reportModalState.equipmentFilter = (reportModalState.equipmentFilter === id) ? null : id;
+          input.value = '';
+          clearBtn.classList.remove('is-visible');
+          dropdown.classList.remove('is-open');
+          renderReportEquipFilter();
+        });
+      });
+    }
+    dropdown.classList.add('is-open');
+  }
+
+  input.addEventListener('focus', () => showDropdown(input.value));
+  input.addEventListener('input', () => {
+    clearBtn.classList.toggle('is-visible', input.value.length > 0);
+    showDropdown(input.value);
+  });
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    clearBtn.classList.remove('is-visible');
+    showDropdown('');
+    input.focus();
+  });
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.report-equip-wrap')) dropdown.classList.remove('is-open');
+  });
+}
+
 // Wire all modal controls once (on init).
 function wireReportModal(){
   document.getElementById('reportBtn').addEventListener('click', openReportModal);
   document.getElementById('reportModalClose').addEventListener('click', closeReportModal);
   document.getElementById('reportCancelBtn').addEventListener('click', closeReportModal);
+
+  wireReportEquipFilter();
 
   // Click outside the modal-card closes it
   document.getElementById('reportModal').addEventListener('click', (e) => {
@@ -6006,6 +6233,7 @@ function wireReportModal(){
       sections: { ...reportModalState.sections },
       dateRange: { start: range.start, end: range.end },
       lang: reportModalState.lang || LANG,
+      equipmentFilter: reportModalState.equipmentFilter || null,
     };
     closeReportModal();
     generateReport(options);
