@@ -118,18 +118,23 @@
      ───────────────────────────────────────────────────────────────── */
   .app{
     display:grid;
-    grid-template-columns:248px 1fr;
+    grid-template-columns:var(--sidebar-w, 248px) 1fr;
     min-height:100vh;
+    transition:grid-template-columns .3s cubic-bezier(.4,0,.2,1);
+  }
+  .app.sidebar-collapsed{
+    --sidebar-w: 64px;
   }
   @media (max-width:1024px){
     .app{grid-template-columns:1fr}
+    .app.sidebar-collapsed{grid-template-columns:1fr}
   }
 
   /* SIDEBAR */
   .sidebar{
     background:var(--bg-1);
     border-right:1px solid var(--border-1);
-    padding:24px 16px;
+    padding:24px 12px;
     position:sticky;
     top:0;
     height:100vh;
@@ -137,26 +142,66 @@
     flex-direction:column;
     gap:8px;
     z-index:50;
-    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    width:var(--sidebar-w, 248px);
+    overflow:hidden;
+    transition:width .3s cubic-bezier(.4,0,.2,1), transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .app.sidebar-collapsed .sidebar{
+    width:64px;
+    padding:24px 10px;
   }
   @media (max-width:1024px){
     .sidebar{
       position:fixed;
       left:0;top:0;bottom:0;
-      width:248px;
+      width:248px !important;
+      padding:24px 12px !important;
       transform:translateX(-100%);
       box-shadow:var(--shadow-2);
     }
     .sidebar.is-open{transform:translateX(0)}
   }
 
+  /* ── collapse toggle button (desktop only) ── */
+  .sidebar-collapse-btn{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    padding:0 4px 16px;
+    margin-bottom:4px;
+    border-bottom:1px solid var(--border-1);
+  }
+  @media (max-width:1024px){.sidebar-collapse-btn{display:none}}
+  .sidebar-collapse-btn button{
+    width:28px;height:28px;
+    border-radius:7px;
+    border:1px solid var(--border-1);
+    background:var(--bg-2);
+    color:var(--fg-3);
+    cursor:pointer;
+    display:grid;place-items:center;
+    transition:all .15s;
+    flex-shrink:0;
+  }
+  .sidebar-collapse-btn button:hover{color:var(--fg-1);border-color:var(--accent);background:var(--accent-glow)}
+  .sidebar-collapse-btn button svg{
+    width:14px;height:14px;
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+  }
+  .app.sidebar-collapsed .sidebar-collapse-btn button svg{
+    transform:rotate(180deg);
+  }
+
+  /* brand */
   .brand{
     display:flex;
     align-items:center;
     gap:10px;
-    padding:4px 8px 18px;
+    padding:4px 4px 18px;
     border-bottom:1px solid var(--border-1);
     margin-bottom:12px;
+    white-space:nowrap;
+    overflow:hidden;
   }
   .brand-logo{
     width:36px;height:36px;
@@ -167,23 +212,38 @@
     font-family:'Bricolage Grotesque',sans-serif;
     font-weight:800;font-size:18px;
     box-shadow:0 0 24px var(--accent-glow);
+    flex-shrink:0;
   }
-  .brand-text{display:flex;flex-direction:column;line-height:1}
+  .brand-text{
+    display:flex;flex-direction:column;line-height:1;
+    transition:opacity .2s, width .3s;
+    overflow:hidden;
+  }
   .brand-text strong{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:15px;letter-spacing:-.01em}
   .brand-text small{color:var(--fg-3);font-size:11px;margin-top:3px;letter-spacing:.04em;text-transform:uppercase}
+  .app.sidebar-collapsed .brand-text{opacity:0;width:0;pointer-events:none}
+  .app.sidebar-collapsed .brand{padding-bottom:18px}
 
+  /* nav section labels */
   .nav-section-label{
     color:var(--fg-3);
     font-size:10.5px;
     letter-spacing:.12em;
     text-transform:uppercase;
     font-weight:600;
-    padding:14px 12px 8px;
+    padding:14px 8px 8px;
+    white-space:nowrap;
+    overflow:hidden;
+    transition:opacity .2s, height .3s, padding .3s;
+  }
+  .app.sidebar-collapsed .nav-section-label{
+    opacity:0;height:0;padding:0;pointer-events:none;
   }
 
+  /* nav items */
   .nav-item{
     display:flex;align-items:center;gap:12px;
-    padding:10px 12px;
+    padding:10px 10px;
     border-radius:10px;
     color:var(--fg-2);
     font-size:14px;
@@ -193,8 +253,11 @@
     width:100%;
     text-align:left;
     position:relative;
+    white-space:nowrap;
+    overflow:hidden;
   }
   .nav-item:hover{background:var(--bg-2);color:var(--fg-1);transform:translateX(2px)}
+  .app.sidebar-collapsed .nav-item:hover{transform:none}
   .nav-item.is-active{
     background:linear-gradient(90deg, var(--accent-glow) 0%, var(--bg-2) 100%);
     color:var(--fg-1);
@@ -212,6 +275,37 @@
   .nav-item.is-active .nav-icon{color:var(--accent)}
   .nav-icon{width:18px;height:18px;flex-shrink:0;color:var(--fg-3);transition:color .15s}
   .nav-item:hover .nav-icon{color:var(--fg-1)}
+  /* nav label text */
+  .nav-label{
+    transition:opacity .2s, width .25s;
+    overflow:hidden;
+  }
+  .app.sidebar-collapsed .nav-label{opacity:0;width:0;pointer-events:none}
+
+  /* tooltip on collapsed items */
+  .app.sidebar-collapsed .nav-item{
+    justify-content:center;
+    padding:10px;
+  }
+  .app.sidebar-collapsed .nav-item::after{
+    content:attr(data-tooltip);
+    position:absolute;
+    left:calc(100% + 10px);
+    top:50%;transform:translateY(-50%);
+    background:var(--bg-0);
+    color:var(--fg-1);
+    font-size:12px;font-weight:600;
+    padding:5px 10px;
+    border-radius:7px;
+    border:1px solid var(--border-1);
+    box-shadow:var(--shadow-2);
+    white-space:nowrap;
+    pointer-events:none;
+    opacity:0;
+    transition:opacity .15s;
+    z-index:100;
+  }
+  .app.sidebar-collapsed .nav-item:hover::after{opacity:1}
 
   .sidebar-footer{
     margin-top:auto;
@@ -842,131 +936,6 @@
     color:var(--fg-3);font-size:12.5px;font-style:italic;
   }
   .kanban-empty svg{display:block;margin:0 auto 10px;opacity:.3}
-
-  /* ── KANBAN right sidebar ── */
-  .kanban-sidebar{display:flex;flex-direction:column;gap:14px}
-  .kb-calendar{
-    background:var(--bg-1);
-    border:1px solid var(--border-1);
-    border-radius:14px;
-    padding:16px;
-  }
-  .kb-cal-header{
-    display:flex;align-items:center;
-    justify-content:space-between;
-    margin-bottom:14px;
-  }
-  .kb-cal-month{
-    font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:700;font-size:14px;color:var(--fg-1);
-  }
-  .kb-cal-nav{
-    display:flex;gap:4px;
-  }
-  .kb-cal-nav-btn{
-    width:26px;height:26px;border-radius:7px;
-    border:1px solid var(--border-1);
-    background:var(--bg-2);color:var(--fg-2);
-    cursor:pointer;display:grid;place-items:center;
-    transition:all .15s;
-  }
-  .kb-cal-nav-btn:hover{border-color:var(--accent);color:var(--accent)}
-  .kb-cal-nav-btn svg{width:13px;height:13px}
-  .kb-cal-grid{
-    display:grid;grid-template-columns:repeat(7,1fr);
-    gap:2px;text-align:center;
-  }
-  .kb-cal-dow{
-    font-size:9.5px;font-weight:700;letter-spacing:.06em;
-    color:var(--fg-3);text-transform:uppercase;
-    padding-bottom:8px;
-  }
-  .kb-cal-day{
-    aspect-ratio:1;
-    display:grid;place-items:center;
-    font-size:12px;font-weight:500;color:var(--fg-2);
-    border-radius:8px;
-    cursor:pointer;
-    transition:all .15s;
-    position:relative;
-  }
-  .kb-cal-day:hover{background:var(--bg-3);color:var(--fg-1)}
-  .kb-cal-day.is-today{
-    background:var(--accent);color:#fff;font-weight:700;
-    box-shadow:0 2px 8px var(--accent-glow);
-  }
-  .kb-cal-day.has-events::after{
-    content:"";
-    position:absolute;bottom:3px;left:50%;transform:translateX(-50%);
-    width:4px;height:4px;border-radius:50%;
-    background:var(--accent);
-  }
-  .kb-cal-day.is-today.has-events::after{background:#fff}
-  .kb-cal-day.is-selected:not(.is-today){
-    background:var(--accent-glow);
-    color:var(--accent);font-weight:700;
-    border:1px solid var(--accent);
-  }
-  .kb-cal-day.other-month{color:var(--fg-3);opacity:.4}
-  .kb-cal-day.no-day{pointer-events:none}
-  .kb-cal-today-btn{
-    width:100%;margin-top:12px;
-    padding:8px;border-radius:8px;
-    border:1px solid var(--border-1);
-    background:var(--bg-2);color:var(--fg-2);
-    font:inherit;font-size:12px;font-weight:600;
-    cursor:pointer;transition:all .15s;
-  }
-  .kb-cal-today-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow)}
-
-  /* ── kanban stats card (sidebar) ── */
-  .kb-stats{
-    background:var(--bg-1);
-    border:1px solid var(--border-1);
-    border-radius:14px;
-    padding:16px;
-    display:flex;flex-direction:column;gap:10px;
-  }
-  .kb-stats-title{
-    font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:700;font-size:13px;color:var(--fg-1);
-    margin-bottom:4px;
-  }
-  .kb-stat-row{
-    display:flex;align-items:center;gap:10px;
-  }
-  .kb-stat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-  .kb-stat-label{font-size:12px;color:var(--fg-2);flex:1}
-  .kb-stat-bar-wrap{flex:2;height:5px;background:var(--bg-3);border-radius:3px;overflow:hidden}
-  .kb-stat-bar{height:100%;border-radius:3px;transition:width .4s cubic-bezier(.16,1,.3,1)}
-  .kb-stat-val{font-size:12px;font-weight:700;color:var(--fg-1);font-family:'JetBrains Mono',monospace;min-width:18px;text-align:right}
-
-  /* ── selected-date events card (sidebar) ── */
-  .kb-date-events{
-    background:var(--bg-1);
-    border:1px solid var(--border-1);
-    border-radius:14px;
-    padding:16px;
-  }
-  .kb-date-events-title{
-    font-family:'Bricolage Grotesque',sans-serif;
-    font-weight:700;font-size:13px;color:var(--fg-1);
-    margin-bottom:10px;
-  }
-  .kb-event-item{
-    display:flex;align-items:flex-start;gap:10px;
-    padding:9px 0;
-    border-top:1px solid var(--border-1);
-    cursor:pointer;
-  }
-  .kb-event-item:first-of-type{border-top:none;padding-top:0}
-  .kb-event-item:hover .kb-event-task{color:var(--accent)}
-  .kb-event-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
-  .kb-event-body{flex:1;min-width:0}
-  .kb-event-id{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:var(--fg-3);margin-bottom:1px}
-  .kb-event-task{font-size:12px;font-weight:500;color:var(--fg-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .15s}
-  .kb-event-dur{font-size:10.5px;color:var(--fg-3);font-family:'JetBrains Mono',monospace}
-  .kb-events-empty{font-size:12px;color:var(--fg-3);font-style:italic;text-align:center;padding:16px 0}
 
   /* ── dept summary ── */
   .dept-summary-grid{
@@ -2248,6 +2217,14 @@
 
   <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
   <aside class="sidebar" id="sidebar" aria-label="Navigation principale">
+
+    <!-- collapse toggle (desktop) -->
+    <div class="sidebar-collapse-btn">
+      <button id="sidebarCollapseBtn" aria-label="Réduire le menu" title="Réduire le menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+    </div>
+
     <div class="brand">
       <div class="brand-logo">M</div>
       <div class="brand-text">
@@ -2257,41 +2234,41 @@
     </div>
 
     <div class="nav-section-label" data-i18n="nav.section.pilot">Pilotage</div>
-    <button class="nav-item is-active" data-view="overview">
+    <button class="nav-item is-active" data-view="overview" data-tooltip="Vue d'ensemble">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
-      <span data-i18n="nav.overview">Vue d'ensemble</span>
+      <span class="nav-label" data-i18n="nav.overview">Vue d'ensemble</span>
     </button>
-    <button class="nav-item" data-view="kanban">
+    <button class="nav-item" data-view="kanban" data-tooltip="Kanban">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="18" rx="1"/><rect x="9" y="3" width="6" height="12" rx="1"/><rect x="15" y="3" width="6" height="8" rx="1"/></svg>
-      <span data-i18n="nav.kanban">Kanban</span>
+      <span class="nav-label" data-i18n="nav.kanban">Kanban</span>
     </button>
-    <button class="nav-item" data-view="locations">
+    <button class="nav-item" data-view="locations" data-tooltip="Localisations">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      <span data-i18n="nav.locations">Localisations</span>
+      <span class="nav-label" data-i18n="nav.locations">Localisations</span>
     </button>
 
     <div class="nav-section-label" data-i18n="nav.section.analysis">Analyse</div>
-    <button class="nav-item" data-view="ranking">
+    <button class="nav-item" data-view="ranking" data-tooltip="Classement">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-      <span data-i18n="nav.ranking">Classement</span>
+      <span class="nav-label" data-i18n="nav.ranking">Classement</span>
     </button>
-    <button class="nav-item" data-view="trends">
+    <button class="nav-item" data-view="trends" data-tooltip="Tendances">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-      <span data-i18n="nav.trends">Tendances</span>
+      <span class="nav-label" data-i18n="nav.trends">Tendances</span>
     </button>
-    <button class="nav-item" data-view="all">
+    <button class="nav-item" data-view="all" data-tooltip="Interventions">
       <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
-      <span data-i18n="nav.all">Toutes les interventions</span>
+      <span class="nav-label" data-i18n="nav.all">Toutes les interventions</span>
     </button>
 
     <div class="sidebar-footer">
-      <button class="nav-item nav-item--accent" id="reportBtn">
+      <button class="nav-item nav-item--accent" id="reportBtn" data-tooltip="Rapport">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        <span data-i18n="nav.report">Générer un rapport</span>
+        <span class="nav-label" data-i18n="nav.report">Générer un rapport</span>
       </button>
-      <button class="nav-item" id="exportBtn">
+      <button class="nav-item" id="exportBtn" data-tooltip="Exporter CSV">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        <span data-i18n="nav.export">Exporter (CSV)</span>
+        <span class="nav-label" data-i18n="nav.export">Exporter (CSV)</span>
       </button>
     </div>
   </aside>
@@ -2451,6 +2428,17 @@
       <!-- ═══════════════ VIEW: KANBAN ═══════════════ -->
       <section class="view" data-view="kanban">
 
+        <!-- ── Répartition par service (en haut) ── -->
+        <div class="card">
+          <div class="card-head">
+            <div>
+              <div class="card-title" data-i18n="card.deptsum.title">Répartition par service</div>
+              <div class="card-subtitle" data-i18n="card.deptsum.subtitle">Total des interventions actives par service</div>
+            </div>
+          </div>
+          <div class="dept-summary-grid" id="deptSummaryGrid"></div>
+        </div>
+
         <!-- ── Toolbar ── -->
         <div class="kb-toolbar">
           <div class="kb-toolbar-title">
@@ -2458,7 +2446,6 @@
             <small data-i18n="card.kanban.subtitle">Vue par statut opérationnel</small>
           </div>
 
-          <!-- Location chips -->
           <div class="kb-filters" id="kanbanLocFilters">
             <button class="chip is-active" data-loc-filter="all" data-i18n="filter.all_loc">Toutes</button>
             <button class="chip" data-loc-filter="KCC/100T">KCC/100T</button>
@@ -2467,79 +2454,25 @@
           </div>
 
           <div class="kb-sep"></div>
-
-          <!-- Dept chips (dynamic) -->
           <div class="kb-filters" id="kanbanDeptFilters"></div>
-
           <div class="kb-sep"></div>
 
-          <!-- View-mode toggle -->
           <div class="kb-view-toggle" id="kbViewToggle">
-            <!-- Column -->
             <button class="kb-view-btn is-active" data-kb-view="col" title="Colonnes">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="18" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
             </button>
-            <!-- Grid -->
             <button class="kb-view-btn" data-kb-view="grid" title="Grille">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
             </button>
-            <!-- List -->
             <button class="kb-view-btn" data-kb-view="list" title="Liste">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1.2" fill="currentColor" stroke="none"/></svg>
             </button>
           </div>
         </div>
 
-        <!-- ── Shell: board + sidebar ── -->
-        <div class="kanban-shell">
+        <!-- ── Board ── -->
+        <div class="kanban" id="kanbanBoard"></div>
 
-          <!-- Board -->
-          <div class="kanban-main">
-            <div class="kanban" id="kanbanBoard"></div>
-
-            <!-- Dept summary -->
-            <div class="card">
-              <div class="card-head">
-                <div>
-                  <div class="card-title" data-i18n="card.deptsum.title">Répartition par service</div>
-                  <div class="card-subtitle" data-i18n="card.deptsum.subtitle">Total des interventions actives par service</div>
-                </div>
-              </div>
-              <div class="dept-summary-grid" id="deptSummaryGrid"></div>
-            </div>
-          </div>
-
-          <!-- Sidebar -->
-          <div class="kanban-sidebar">
-
-            <!-- Mini calendar -->
-            <div class="kb-calendar">
-              <div class="kb-cal-header">
-                <div class="kb-cal-month" id="kbCalMonth">—</div>
-                <div class="kb-cal-nav">
-                  <button class="kb-cal-nav-btn" id="kbCalPrev" aria-label="Mois précédent">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  </button>
-                  <button class="kb-cal-nav-btn" id="kbCalNext" aria-label="Mois suivant">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-              </div>
-              <div class="kb-cal-grid" id="kbCalGrid"></div>
-              <button class="kb-cal-today-btn" id="kbCalTodayBtn">Aujourd'hui</button>
-            </div>
-
-            <!-- Status stats -->
-            <div class="kb-stats" id="kbStats"></div>
-
-            <!-- Events for selected date -->
-            <div class="kb-date-events" id="kbDateEvents">
-              <div class="kb-date-events-title" id="kbDateEventsTitle">—</div>
-              <div id="kbDateEventsList"></div>
-            </div>
-
-          </div>
-        </div>
       </section>
 
       <!-- ═══════════════ VIEW: LOCATIONS ═══════════════ -->
@@ -3376,17 +3309,32 @@ if(savedLang === 'en' || savedLang === 'fr') LANG = savedLang;
 if(langLabel) langLabel.textContent = LANG.toUpperCase();
 
 /* ════════════════════════════════════════════════════════════════════
-   SIDEBAR (mobile)
+   SIDEBAR — mobile open/close + desktop collapse
    ════════════════════════════════════════════════════════════════════ */
-const sidebar = document.getElementById('sidebar');
-const overlay = document.getElementById('overlay');
-const menuBtn = document.getElementById('menuBtn');
+const sidebar    = document.getElementById('sidebar');
+const overlay    = document.getElementById('overlay');
+const menuBtn    = document.getElementById('menuBtn');
+const collapseBtn= document.getElementById('sidebarCollapseBtn');
+const app        = document.querySelector('.app');
+
+// Restore saved collapse state
+const COLLAPSE_KEY = 'sidebar_collapsed';
+if(localStorage.getItem(COLLAPSE_KEY) === '1') app.classList.add('sidebar-collapsed');
+
 function setSidebar(open){
   sidebar.classList.toggle('is-open', open);
   overlay.classList.toggle('is-visible', open);
 }
+function toggleCollapse(){
+  const collapsed = app.classList.toggle('sidebar-collapsed');
+  localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0');
+  // Resize charts after transition so they fill the new width
+  setTimeout(() => Object.values(CHARTS).forEach(c => c && c.resize && c.resize()), 320);
+}
+
 menuBtn.addEventListener('click', () => setSidebar(true));
 overlay.addEventListener('click', () => setSidebar(false));
+collapseBtn?.addEventListener('click', toggleCollapse);
 
 /* ════════════════════════════════════════════════════════════════════
    VIEW SWITCHING
@@ -4143,7 +4091,8 @@ const KANBAN_STATUS_ICONS = {
 
 function renderKanban(){
   const board = document.getElementById('kanbanBoard');
-  // Apply view-mode class
+  if(!board) return;
+
   board.className = 'kanban' + (kbViewMode !== 'col' ? ` kb-mode-${kbViewMode}` : '');
 
   const cols = KANBAN_STATUSES.map(key => ({
@@ -4160,13 +4109,9 @@ function renderKanban(){
 
     const cardsHTML = cards.map(r => {
       const locHTML = (!isList && r.location && r.location !== '—')
-        ? `<div class="kanban-card-loc">
-             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-             ${escapeHTML(r.location)}
-           </div>`
+        ? `<div class="kanban-card-loc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>${escapeHTML(r.location)}</div>`
         : '';
-
-      return `<div class="kanban-card" style="--col-bg:${col.color}" data-card-sig="${escapeHTML(recordSig(r))}">
+      return `<div class="kanban-card" style="--col-bg:${col.color}" data-sig="${escapeHTML(recordSig(r))}">
           <div class="kanban-card-top">
             <span class="kanban-card-id">${escapeHTML(r.id)}</span>
             <span class="kanban-card-cat">${escapeHTML(r.category === 'AUTRE' ? deptLabel(r.department) : r.category)}</span>
@@ -4205,23 +4150,16 @@ function renderKanban(){
       </div>`;
   }).join('');
 
-  // Wire card clicks
-  if(board._cardClickHandler) board.removeEventListener('click', board._cardClickHandler);
-  board._cardClickHandler = e => {
-    const card = e.target.closest('[data-card-sig]');
-    if(!card) return;
-    const sig = card.dataset.cardSig;
-    const rec = DATA.find(r => recordSig(r) === sig);
-    if(rec) openTaskDrawer(rec);
-  };
-  board.addEventListener('click', board._cardClickHandler);
-
-  // Refresh sidebar stats whenever board renders
-  renderKbStats();
-  kbCalRender();
+  // Direct onclick on every card — no delegation, works regardless of child element clicked
+  board.querySelectorAll('.kanban-card[data-sig]').forEach(el => {
+    el.addEventListener('click', () => {
+      const rec = DATA.find(r => recordSig(r) === el.dataset.sig);
+      if(rec) openTaskDrawer(rec);
+    });
+  });
 }
 
-/* ── view-mode toggle wiring ── */
+/* ── view-mode toggle ── */
 document.getElementById('kbViewToggle')?.addEventListener('click', e => {
   const btn = e.target.closest('[data-kb-view]');
   if(!btn) return;
@@ -4230,170 +4168,8 @@ document.getElementById('kbViewToggle')?.addEventListener('click', e => {
   renderKanban();
 });
 
-/* ── sidebar stats ── */
-function renderKbStats(){
-  const el = document.getElementById('kbStats');
-  if(!el) return;
-  const filtered = getKanbanFiltered();
-  const total = filtered.length || 1;
-  const statuses = KANBAN_STATUSES.map(key => ({
-    key,
-    label: t(`status.${key}.short`),
-    color: STATUS_CSS_COLOR[key],
-    count: filtered.filter(r => r.kanbanKey === key).length,
-  }));
-  el.innerHTML = `
-    <div class="kb-stats-title">Répartition statuts</div>
-    ${statuses.map(s => `
-      <div class="kb-stat-row">
-        <div class="kb-stat-dot" style="background:${s.color}"></div>
-        <div class="kb-stat-label">${escapeHTML(s.label)}</div>
-        <div class="kb-stat-bar-wrap">
-          <div class="kb-stat-bar" style="width:${Math.round(s.count/total*100)}%;background:${s.color}"></div>
-        </div>
-        <div class="kb-stat-val">${s.count}</div>
-      </div>`).join('')}
-  `;
-}
-/* ════════════════════════════════════════════════════════════════════
-   KANBAN MINI CALENDAR
-   ════════════════════════════════════════════════════════════════════ */
-let kbCalYear  = new Date().getFullYear();
-let kbCalMonth = new Date().getMonth();  // 0-based
-let kbCalSelected = null; // ISO date string "YYYY-MM-DD" | null
-
-function kbCalRender(){
-  const grid  = document.getElementById('kbCalGrid');
-  const title = document.getElementById('kbCalMonth');
-  if(!grid || !title) return;
-
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0,10);
-
-  // Dates that have at least one intervention starting on that day
-  const eventDates = new Set(DATA.map(r => r.startDate).filter(Boolean));
-
-  const monthName = new Date(kbCalYear, kbCalMonth, 1)
-    .toLocaleDateString(LANG === 'fr' ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric' });
-  title.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-
-  const dows = LANG === 'fr'
-    ? ['L','M','M','J','V','S','D']
-    : ['M','T','W','T','F','S','S'];
-
-  // First day of month (Monday-based: 0=Mon … 6=Sun)
-  const firstDay = new Date(kbCalYear, kbCalMonth, 1);
-  const startDow = (firstDay.getDay() + 6) % 7; // convert Sun=0 → Mon=0
-  const daysInMonth = new Date(kbCalYear, kbCalMonth + 1, 0).getDate();
-  const daysInPrev  = new Date(kbCalYear, kbCalMonth, 0).getDate();
-
-  const cells = [];
-  // Leading days from prev month
-  for(let i = startDow - 1; i >= 0; i--){
-    cells.push({ d: daysInPrev - i, active: false });
-  }
-  // Current month days
-  for(let d = 1; d <= daysInMonth; d++){
-    cells.push({ d, active: true });
-  }
-  // Trailing days to fill last row
-  while(cells.length % 7 !== 0){
-    cells.push({ d: cells.length - daysInMonth - startDow + 1, active: false });
-  }
-
-  grid.innerHTML =
-    dows.map(d => `<div class="kb-cal-dow">${d}</div>`).join('') +
-    cells.map(({ d, active }) => {
-      if(!active) return `<div class="kb-cal-day other-month">${d}</div>`;
-      const iso = `${kbCalYear}-${String(kbCalMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      const isToday    = iso === todayStr;
-      const hasEvents  = eventDates.has(iso);
-      const isSelected = iso === kbCalSelected;
-      const cls = [
-        'kb-cal-day',
-        isToday    ? 'is-today'    : '',
-        hasEvents  ? 'has-events'  : '',
-        isSelected ? 'is-selected' : '',
-      ].filter(Boolean).join(' ');
-      return `<div class="${cls}" data-cal-date="${iso}">${d}</div>`;
-    }).join('');
-
-  // Click on a day
-  grid.querySelectorAll('[data-cal-date]').forEach(el => {
-    el.addEventListener('click', () => {
-      const date = el.dataset.calDate;
-      kbCalSelected = kbCalSelected === date ? null : date;
-      kbCalRender();
-      renderKbDateEvents();
-    });
-  });
-
-  renderKbDateEvents();
-}
-
-function renderKbDateEvents(){
-  const titleEl = document.getElementById('kbDateEventsTitle');
-  const listEl  = document.getElementById('kbDateEventsList');
-  if(!titleEl || !listEl) return;
-
-  if(!kbCalSelected){
-    titleEl.textContent = LANG === 'fr' ? 'Interventions du jour' : "Today's tasks";
-    const today = new Date().toISOString().slice(0,10);
-    const recs = DATA.filter(r => r.startDate === today);
-    listEl.innerHTML = recs.length === 0
-      ? `<div class="kb-events-empty">${LANG === 'fr' ? 'Aucune intervention aujourd\'hui' : 'No tasks today'}</div>`
-      : recs.map(r => kbEventItemHTML(r)).join('');
-  } else {
-    const d = new Date(kbCalSelected + 'T00:00:00');
-    const label = d.toLocaleDateString(LANG === 'fr' ? 'fr-FR' : 'en-GB', { day:'numeric', month:'short' });
-    titleEl.textContent = label;
-    const recs = DATA.filter(r => r.startDate === kbCalSelected);
-    listEl.innerHTML = recs.length === 0
-      ? `<div class="kb-events-empty">${LANG === 'fr' ? 'Aucune intervention ce jour' : 'No tasks this day'}</div>`
-      : recs.map(r => kbEventItemHTML(r)).join('');
-  }
-
-  // Wire clicks on event items to open drawer
-  listEl.querySelectorAll('[data-event-sig]').forEach(el => {
-    el.addEventListener('click', () => {
-      const sig = el.dataset.eventSig;
-      const rec = DATA.find(r => recordSig(r) === sig);
-      if(rec) openTaskDrawer(rec);
-    });
-  });
-}
-
-function kbEventItemHTML(r){
-  const meta = statusMeta(r.statusKey);
-  const color = STATUS_CSS_COLOR[r.statusKey] || 'var(--accent)';
-  return `
-    <div class="kb-event-item" data-event-sig="${escapeHTML(recordSig(r))}">
-      <div class="kb-event-dot" style="background:${color}"></div>
-      <div class="kb-event-body">
-        <div class="kb-event-id">#${escapeHTML(r.id)} · ${escapeHTML(meta.short)}</div>
-        <div class="kb-event-task">${escapeHTML(r.task || t('no_description'))}</div>
-        <div class="kb-event-dur">${formatDuration(r.durationHours)}</div>
-      </div>
-    </div>`;
-}
-
-document.getElementById('kbCalPrev')?.addEventListener('click', () => {
-  kbCalMonth--;
-  if(kbCalMonth < 0){ kbCalMonth = 11; kbCalYear--; }
-  kbCalRender();
-});
-document.getElementById('kbCalNext')?.addEventListener('click', () => {
-  kbCalMonth++;
-  if(kbCalMonth > 11){ kbCalMonth = 0; kbCalYear++; }
-  kbCalRender();
-});
-document.getElementById('kbCalTodayBtn')?.addEventListener('click', () => {
-  const now = new Date();
-  kbCalYear = now.getFullYear();
-  kbCalMonth = now.getMonth();
-  kbCalSelected = null;
-  kbCalRender();
-});
+/* stub — kbStats element removed but function kept to avoid errors */
+function renderKbStats(){}
 
 // Location filter wiring — keep stable since elements pre-exist in HTML
 document.querySelectorAll('[data-loc-filter]').forEach(btn => {
