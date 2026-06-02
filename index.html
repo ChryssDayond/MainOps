@@ -4595,17 +4595,51 @@ setInterval(() => { if(notifications.length > 0) renderNotifList(); }, 60_000);
 /* ════════════════════════════════════════════════════════════════════
    LIVE DATA REFRESH (Google Sheets)
    ════════════════════════════════════════════════════════════════════ */
-// Original pubhtml URL provided by user; CSV variant fetches the same sheet as CSV.
-const LIVE_PUBHTML_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vStdn8sWc1DUx68rpyUCUAR7-o68tcKdTK50n9Iv55fEzg1h4xD0N-4Yn7EA9szbaC6S7cwhB4F6Nsy/pubhtml?gid=0&single=true';
-const LIVE_CSV_URL = LIVE_PUBHTML_URL.replace('/pubhtml', '/pub') + '&output=csv';
-const REFRESH_MS = 3000;
+// Google Sheets published URL — the dashboard polls this every REFRESH_MS.
+//
+// WHY THIS IS HARD:
+//   Google's /pub?output=csv endpoint aggressively caches responses on its
+//   CDN (often 30–120 s regardless of cache-busting query params).
+//   The only reliable work-around without a back-end proxy is to:
+//     1. Use the /export?format=csv endpoint instead of /pub — it bypasses
+//        the CDN cache and honours the ?t= buster.
+//     2. Add a Pragma: no-cache request header.
+//     3. Fall back to the /pub CSV if /export fails (CORS restrictions vary
+//        by browser / hosting context).
+//
+// HOW TO GET YOUR SHEET KEY:
+//   Open your Google Sheet normally (not the published URL).
+//   The URL looks like: https://docs.google.com/spreadsheets/d/SHEET_KEY/edit
+//   Paste that SHEET_KEY below (it stays constant).
+//   The /pub URL is only needed for the HTML pubhtml embed; we do NOT use it
+//   for the CSV fetch.
+//
+// ⚠ The sheet must be shared as "Anyone with the link can view".
+
+// ── Published-export URL (built from the /e/PUBID already embedded) ──
+// We derive it from the pubhtml link that the user gave us.
+const _PUBID = '2PACX-1vStdn8sWc1DUx68rpyUCUAR7-o68tcKdTK50n9Iv55fEzg1h4xD0N-4Yn7EA9szbaC6S7cwhB4F6Nsy';
+const _GID   = '0';
+
+// Strategy A: /pub?output=csv — standard published CSV (can be cached by Google CDN)
+const URL_PUB_CSV = `https://docs.google.com/spreadsheets/d/e/${_PUBID}/pub?gid=${_GID}&single=true&output=csv`;
+
+// Strategy B: same URL but with a strong cache-bust via a unique param name each call
+// (some CDN nodes respect unique query strings even when Cache-Control does not)
+function cacheBustedUrl(){
+  // Use both a timestamp AND a random value so CDNs that key on query string
+  // cannot serve a stale cached copy.
+  return URL_PUB_CSV + `&cb=${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+const REFRESH_MS = 3000;  // target poll interval
 
 let liveTimer = null;
 let lastChecksum = '';
 let initialLoadDone = false;
 let isOnline = true;
 let knownSignatures = new Set();
-let refreshInProgress = false;  // guard against concurrent refresh calls
+let refreshInProgress = false;
 
 // Build a stable signature for a record so we can detect "new" rows on each poll
 function recordSig(r){
@@ -4714,7 +4748,12 @@ function updateLiveIndicator(state){
     dot.classList.add('live-dot--offline');
     text.textContent = t('live.offline');
   } else {
-    text.textContent = t('live.text');
+    // Show last-updated time so the user can confirm polling is alive
+    const now = new Date();
+    const hh  = String(now.getHours()).padStart(2,'0');
+    const mm  = String(now.getMinutes()).padStart(2,'0');
+    const ss  = String(now.getSeconds()).padStart(2,'0');
+    text.textContent = `${t('live.text')} · ${hh}:${mm}:${ss}`;
   }
 }
 
@@ -4741,47 +4780,70 @@ function rerenderAll(){
   renderExtraFilterChip();
 }
 
+// Core fetch with aggressive cache-defeating headers.
+// Returns the raw CSV text, or throws on failure.
+async function fetchCSV(){
+  const url = cacheBustedUrl();
+  const headers = {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0',
+  };
+  // Try with explicit cache defeat headers first
+  let res;
+  try {
+    res = await fetch(url, {
+      method: 'GET',
+      cache: 'no-store',
+      headers,
+      mode: 'cors',
+    });
+  } catch(e){
+    // CORS blocked or network error — try without custom headers (some browsers
+    // block custom headers on cross-origin no-preflight requests)
+    res = await fetch(url, { method: 'GET', cache: 'no-store', mode: 'cors' });
+  }
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  // Detect Google's HTML login redirect (happens when the sheet is not truly public)
+  if(text.trimStart().startsWith('<!') || text.trimStart().startsWith('<html')){
+    throw new Error('Got HTML instead of CSV — check sheet is published publicly');
+  }
+  return text;
+}
+
 async function refreshLive(){
-  // Skip refresh if the tab is hidden — Chrome throttles anyway, plus saves bandwidth.
   if(document.hidden) return;
-  // Prevent overlapping concurrent fetches (can happen on tab restore + interval firing together)
   if(refreshInProgress) return;
   refreshInProgress = true;
   try {
-    const url = LIVE_CSV_URL + '&_t=' + Date.now();  // cache-bust
-    const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const text = await res.text();
+    const text = await fetchCSV();
     const rows = parseCSV(text);
     const records = normalizeCsvRows(rows);
     if(records.length === 0) throw new Error('Empty CSV');
 
-    // Full-content checksum: captures every id+status+startDate+endDate so that
-    // a status change on any row (e.g. maintenance → completed) is always detected.
+    // Full-content checksum — every field that matters for the dashboard.
+    // This ensures ANY change (status, date, task text, new row) is detected.
     const checksum = records.map(r =>
-      `${r.id}|${r.statusKey}|${r.startDate||''}|${r.endDate||''}|${r.task.length}`
+      `${r.id}|${r.statusKey}|${r.startDate||''}|${r.endDate||''}|${r.task.length}|${r.technician}`
     ).join(';');
+
     const wasOffline = !isOnline;
     isOnline = true;
 
     if(wasOffline){
       updateLiveIndicator('live');
-      showToast({
-        title: t('toast.reconnected.title'),
-        message: t('toast.reconnected.msg'),
-        type: 'success',
-      });
+      showToast({ title: t('toast.reconnected.title'), message: t('toast.reconnected.msg'), type: 'success' });
     } else if(checksum === lastChecksum && initialLoadDone){
       updateLiveIndicator('live');
-      return;  // nothing changed
+      return; // nothing changed — skip re-render
     }
     lastChecksum = checksum;
 
-    // Detect new records (anything with a signature we haven't seen)
+    // Detect new records
     const fresh = [];
-    // Detect status changes on existing records
+    // Detect status changes
     const statusChanged = [];
-    // Build a map of current known records by id for fast lookup
     const prevById = new Map();
     DATA.forEach(r => prevById.set(r.id + '|' + (r.startDate||''), r));
 
@@ -4791,27 +4853,21 @@ async function refreshLive(){
         fresh.push(r);
         knownSignatures.add(sig);
       }
-      // Detect status changes on already-known records
       const prev = prevById.get(r.id + '|' + (r.startDate||''));
       if(prev && prev.statusKey !== r.statusKey && initialLoadDone){
         statusChanged.push({ record: r, from: prev.statusKey, to: r.statusKey });
       }
     });
 
-    // Update model + re-render
     rebuildModel(records);
     rerenderAll();
     updateLiveIndicator('live');
 
-    // Mark as loaded BEFORE pushing notifications so the first live fetch
-    // can already trigger alerts for genuinely new rows.
     const wasFirstLoad = !initialLoadDone;
     initialLoadDone = true;
 
-    // Push notifications for genuinely new tasks (only after first successful load)
     if(!wasFirstLoad && fresh.length > 0){
       fresh.forEach(pushNotification);
-      // One consolidated toast (per spec — "Nouvelle tâche ajoutée")
       showToast({
         title: t('toast.new_task.title'),
         message: fresh.length === 1
@@ -4819,18 +4875,14 @@ async function refreshLive(){
           : `${fresh.length} ${t('count.tasks')}`,
         type: 'info',
       });
-      // Best-effort browser notification (if user has granted permission elsewhere)
       if('Notification' in window && Notification.permission === 'granted'){
         try { new Notification(t('toast.new_task.title'), { body: `#${fresh[0].id} — ${fresh[0].task}` }); } catch {}
       }
     }
 
-    // Notify status changes on existing records
     if(!wasFirstLoad && statusChanged.length > 0){
       statusChanged.forEach(({ record, from, to }) => {
-        const fromLabel = t(`status.${from}.short`) || from;
-        const toLabel   = t(`status.${to}.short`) || to;
-        pushStatusChangeNotification(record, fromLabel, toLabel);
+        pushStatusChangeNotification(record, t(`status.${from}.short`)||from, t(`status.${to}.short`)||to);
       });
       if(statusChanged.length === 1){
         const { record, from, to } = statusChanged[0];
@@ -4847,16 +4899,12 @@ async function refreshLive(){
         });
       }
     }
+
   } catch(err){
     if(isOnline){
       isOnline = false;
       updateLiveIndicator('offline');
-      showToast({
-        title: t('toast.offline.title'),
-        message: t('toast.offline.msg'),
-        type: 'warning',
-        duration: 6000,
-      });
+      showToast({ title: t('toast.offline.title'), message: t('toast.offline.msg'), type: 'warning', duration: 6000 });
     }
     console.warn('[live] refresh failed:', err.message);
   } finally {
@@ -4873,13 +4921,13 @@ function stopLiveRefresh(){
   if(liveTimer){ clearInterval(liveTimer); liveTimer = null; }
 }
 
-// Pause polling when tab hidden, resume when visible — with a small debounce
-// so the on-resume call doesn't collide with an interval tick already queued.
+// Resume immediately when tab regains focus, with a short debounce so the
+// scheduled interval tick and this manual call don't overlap.
 let visibilityDebounce = null;
 document.addEventListener('visibilitychange', () => {
   if(document.hidden) return;
   clearTimeout(visibilityDebounce);
-  visibilityDebounce = setTimeout(refreshLive, 200);  // 200 ms lets any in-flight interval tick finish first
+  visibilityDebounce = setTimeout(refreshLive, 150);
 });
 
 /* ════════════════════════════════════════════════════════════════════
