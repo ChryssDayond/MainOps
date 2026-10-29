@@ -149,6 +149,22 @@
     }
     .sidebar.is-open{transform:translateX(0)}
   }
+  /* Collapsible sidebar on desktop — toggled by the topbar button */
+  @media (min-width:1025px){
+    .app{transition:grid-template-columns .28s cubic-bezier(.4,0,.2,1)}
+    .sidebar{
+      overflow-x:hidden;
+      transition:padding .28s cubic-bezier(.4,0,.2,1), border-color .28s, visibility 0s;
+    }
+    .sidebar > *{min-width:216px}
+    body.sidebar-collapsed .app{grid-template-columns:0px 1fr}
+    body.sidebar-collapsed .sidebar{
+      padding-left:0;padding-right:0;
+      border-right-color:transparent;
+      visibility:hidden;
+      transition:padding .28s cubic-bezier(.4,0,.2,1), border-color .28s, visibility 0s linear .28s;
+    }
+  }
 
   .brand{
     display:flex;
@@ -248,8 +264,16 @@
     border:1px solid var(--border-1);
     background:var(--bg-1);
   }
-  .menu-btn:hover{color:var(--fg-1)}
-  @media (max-width:1024px){.menu-btn{display:flex}}
+  .menu-btn:hover{color:var(--fg-1);border-color:var(--border-2)}
+  /* Shown on every screen size: opens the drawer on mobile, collapses the
+     sidebar on desktop */
+  .menu-btn{display:flex;flex-shrink:0;transition:color .15s,border-color .15s}
+  .menu-btn .icon-panel{display:block}
+  .menu-btn .icon-burger{display:none}
+  @media (max-width:1024px){
+    .menu-btn .icon-panel{display:none}
+    .menu-btn .icon-burger{display:block}
+  }
 
   .page-title{
     font-family:'Bricolage Grotesque',sans-serif;
@@ -718,6 +742,80 @@
     font-weight:500;
     color:var(--col-bg-strong,var(--fg-2));
   }
+  /* Kanban view switcher */
+  .kanban-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+  .kanban-toolbar-label{
+    font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);
+  }
+  .kanban-modes button{display:inline-flex;align-items:center;gap:6px}
+  @media (max-width:600px){
+    .kanban-modes button span{display:none}
+    .kanban-modes button{padding:6px 10px}
+  }
+
+  /* Mode: compact — one line per card */
+  .kanban--compact .kanban-body{gap:6px;max-height:640px}
+  .kanban-card--compact{
+    padding:7px 10px;
+    display:grid;
+    grid-template-columns:auto 1fr;
+    grid-template-areas:"id dur" "task task";
+    align-items:center;
+    gap:4px 10px;
+  }
+  .kanban-card--compact .kanban-card-id{grid-area:id}
+  .kanban-card--compact .kanban-card-duration{grid-area:dur;justify-self:end}
+  .kanban-card--compact .kanban-card-task{
+    grid-area:task;
+    margin:0;font-size:12px;color:var(--fg-2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    display:block;-webkit-line-clamp:unset;
+  }
+
+  /* Mode: grid — status groups, cards laid out in a responsive grid */
+  .kanban--grid{display:flex;flex-direction:column;align-items:stretch;gap:18px}
+  .kanban--list{display:block}
+  .kgrid-group{
+    background:var(--bg-1);
+    border:1px solid var(--border-1);
+    border-radius:14px;
+    padding:14px;
+  }
+  .kgrid-head{
+    display:flex;align-items:center;gap:10px;
+    margin-bottom:12px;
+    font-family:'Bricolage Grotesque',sans-serif;
+    font-weight:600;font-size:14px;color:var(--fg-1);
+  }
+  .kgrid-dot{width:10px;height:10px;border-radius:50%;background:var(--col-bg);flex-shrink:0}
+  .kgrid-count{
+    font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+    color:var(--col-bg);background:color-mix(in srgb, var(--col-bg) 16%, transparent);
+    padding:2px 8px;border-radius:999px;
+  }
+  .kgrid-cards{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:10px;
+  }
+  .kgrid-group .kanban-empty{padding:12px 4px;text-align:left}
+
+  /* Mode: list — sortable-looking table of active interventions */
+  .kanban--list{
+    background:var(--bg-1);
+    border:1px solid var(--border-1);
+    border-radius:14px;
+    padding:6px 6px 2px;
+  }
+  .klist-row{cursor:default}
+  .klist-row td:first-child{border-left:3px solid var(--col-bg)}
+  .klist-group td{
+    background:var(--bg-2);
+    font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--col-bg);
+    padding-top:10px;padding-bottom:8px;
+  }
+
   .kanban-empty{
     padding:32px 16px;
     text-align:center;
@@ -1585,6 +1683,67 @@
     line-height:1.4;
   }
 
+  /* Equipment picker (report modal) */
+  .eq-picker{border:1px solid var(--border-1);border-radius:10px;background:var(--bg-2);overflow:hidden}
+  .eq-picker-toggle{
+    width:100%;display:flex;align-items:center;gap:10px;
+    padding:10px 12px;font:inherit;font-size:13px;color:var(--fg-1);
+    background:none;border:0;cursor:pointer;text-align:left;
+  }
+  .eq-picker-toggle:hover{background:var(--bg-3)}
+  .eq-picker-toggle > svg:first-child{color:var(--accent);flex-shrink:0}
+  .eq-picker-label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .eq-chevron{color:var(--fg-3);transition:transform .2s}
+  .eq-picker.is-open .eq-chevron{transform:rotate(180deg)}
+  .eq-picker-panel{border-top:1px solid var(--border-1);padding:10px}
+  .eq-search{
+    display:flex;align-items:center;gap:8px;
+    background:var(--bg-1);border:1px solid var(--border-1);border-radius:8px;
+    padding:0 10px;color:var(--fg-3);
+  }
+  .eq-search:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .eq-search input{
+    flex:1;min-width:0;background:none;border:0;outline:none;
+    color:var(--fg-1);font:inherit;font-size:13px;padding:9px 0;
+  }
+  .eq-panel-actions{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;
+    margin:8px 2px 6px;font-size:11.5px;color:var(--fg-3);
+  }
+  .eq-panel-btns{display:flex;gap:6px}
+  .eq-list{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:2px;padding-right:2px}
+  .eq-list::-webkit-scrollbar{width:6px}
+  .eq-list::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px}
+  .eq-item{
+    display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:10px;
+    padding:7px 8px;border-radius:7px;cursor:pointer;font-size:12.5px;
+  }
+  .eq-item:hover{background:var(--bg-3)}
+  .eq-item.is-checked{background:var(--accent-glow)}
+  .eq-item input{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;margin:0}
+  .eq-id{font-family:'JetBrains Mono',monospace;font-weight:600;color:var(--fg-1);min-width:52px}
+  .eq-meta{min-width:0;color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .eq-meta small{color:var(--fg-3);margin-left:6px}
+  .eq-count{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);white-space:nowrap}
+  .eq-dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0}
+  .eq-dot--active{background:var(--warning)}
+  .eq-empty{padding:16px;text-align:center;color:var(--fg-3);font-size:12.5px;font-style:italic}
+  .eq-selected{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .eq-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 6px 4px 10px;border-radius:999px;
+    background:var(--accent-glow);border:1px solid var(--accent);
+    color:var(--fg-1);font-size:12px;font-family:'JetBrains Mono',monospace;
+  }
+  .eq-chip button{
+    width:18px;height:18px;border-radius:50%;border:0;cursor:pointer;
+    display:grid;place-items:center;background:transparent;color:var(--fg-2);font-size:14px;line-height:1;
+  }
+  .eq-chip button:hover{background:var(--bg-3);color:var(--fg-1)}
+  .eq-hint{margin-top:6px;font-size:11.5px;color:var(--fg-3)}
+  .report-check.is-disabled{opacity:.45;cursor:not-allowed}
+  .report-check.is-disabled:hover{border-color:var(--border-1);background:var(--bg-2)}
+
   /* Period preset row + custom range inputs */
   .report-period-presets{
     display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;
@@ -1890,8 +2049,9 @@
   <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
   <main class="main">
     <header class="topbar">
-      <button class="menu-btn" id="menuBtn" aria-label="Ouvrir le menu">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      <button class="menu-btn" id="menuBtn" aria-label="Masquer le menu" title="Masquer le menu" aria-controls="sidebar" aria-expanded="true">
+        <svg class="icon-panel" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        <svg class="icon-burger" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <div>
         <h1 class="page-title" id="pageTitle">Vue d'ensemble</h1>
@@ -2034,6 +2194,27 @@
               <div class="card-subtitle" data-i18n="card.kanban.subtitle">Vue par statut opérationnel</div>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+              <div class="kanban-toolbar">
+                <span class="kanban-toolbar-label" data-i18n="kanban.view.label">Affichage</span>
+                <div class="group-controls kanban-modes" id="kanbanModeControls" role="group">
+                  <button data-kmode="columns" class="is-active">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/></svg>
+                    <span data-i18n="kanban.view.columns">Colonnes</span>
+                  </button>
+                  <button data-kmode="grid">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                    <span data-i18n="kanban.view.grid">Grille</span>
+                  </button>
+                  <button data-kmode="list">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3.5" cy="6" r="1"/><circle cx="3.5" cy="12" r="1"/><circle cx="3.5" cy="18" r="1"/></svg>
+                    <span data-i18n="kanban.view.list">Liste</span>
+                  </button>
+                  <button data-kmode="compact">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="5" x2="21" y2="5"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="3" y1="20" x2="21" y2="20"/></svg>
+                    <span data-i18n="kanban.view.compact">Compact</span>
+                  </button>
+                </div>
+              </div>
               <div class="filters" style="margin:0" id="kanbanLocFilters">
                 <button class="chip is-active" data-loc-filter="all" data-i18n="filter.all_loc">Toutes localisations</button>
                 <button class="chip" data-loc-filter="KCC/100T">KCC/100T</button>
@@ -2244,11 +2425,45 @@
           <div class="modal-section-actions">
             <button class="modal-mini-btn" id="reportSelectAll" data-i18n="report.modal.select_all">Tout cocher</button>
             <button class="modal-mini-btn" id="reportSelectNone" data-i18n="report.modal.select_none">Tout décocher</button>
+            <button class="modal-mini-btn" id="reportOnlyHistory" data-i18n="report.modal.only_history">Historique seul</button>
           </div>
         </div>
         <div class="report-check-grid" id="reportCheckGrid">
           <!-- Checkboxes injected by openReportModal() so labels follow current language -->
         </div>
+      </section>
+
+      <!-- EQUIPMENT PICKER -->
+      <section class="modal-section">
+        <div class="modal-section-head">
+          <h3 data-i18n="report.modal.equipment">Équipements</h3>
+          <div class="modal-section-actions">
+            <button class="modal-mini-btn" id="eqClearAll" data-i18n="report.modal.eq_all">Tout le parc</button>
+          </div>
+        </div>
+        <div class="eq-picker" id="eqPicker">
+          <button type="button" class="eq-picker-toggle" id="eqPickerToggle" aria-expanded="false" aria-controls="eqPickerPanel">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span class="eq-picker-label" id="eqPickerLabel">Tous les équipements</span>
+            <svg class="eq-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="eq-picker-panel" id="eqPickerPanel" hidden>
+            <div class="eq-search">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="search" id="eqSearch" autocomplete="off" data-i18n-placeholder="report.modal.eq_search" placeholder="Rechercher : ID, catégorie, service, site…" />
+            </div>
+            <div class="eq-panel-actions">
+              <span id="eqResultCount">—</span>
+              <span class="eq-panel-btns">
+                <button type="button" class="modal-mini-btn" id="eqCheckVisible" data-i18n="report.modal.eq_check_visible">Cocher les résultats</button>
+                <button type="button" class="modal-mini-btn" id="eqUncheckVisible" data-i18n="report.modal.eq_uncheck_visible">Décocher les résultats</button>
+              </span>
+            </div>
+            <div class="eq-list" id="eqList" role="group"></div>
+          </div>
+        </div>
+        <div class="eq-selected" id="eqSelected"></div>
+        <p class="eq-hint" data-i18n="report.modal.eq_hint">Aucune sélection = rapport sur tout le parc.</p>
       </section>
 
       <!-- 2. DATE RANGE -->
@@ -2348,6 +2563,12 @@ const I18N = {
     'card.active.title':'Interventions actives','card.active.subtitle':'Tâches en cours, en attente ou en entretien',
     'card.cat.title':"Catégories d'équipements",'card.cat.subtitle':'Distribution du parc',
     'card.kanban.title':'Tableau Kanban des interventions','card.kanban.subtitle':'Vue par statut opérationnel',
+    'sidebar.hide':'Masquer le menu','sidebar.show':'Afficher le menu','sidebar.open':'Ouvrir le menu',
+    'kanban.view.label':'Affichage','kanban.view.columns':'Colonnes','kanban.view.grid':'Grille',
+    'kanban.view.list':'Liste','kanban.view.compact':'Compact',
+    'kanban.list.status':'Statut','kanban.list.equipment':'Équipement','kanban.list.category':'Catégorie',
+    'kanban.list.task':'Tâche','kanban.list.tech':'Technicien','kanban.list.location':'Localisation','kanban.list.duration':'Durée',
+    'kanban.none':'Aucune intervention active pour ces filtres',
     'card.deptsum.title':'Répartition par service','card.deptsum.subtitle':'Total des interventions actives par service',
     'card.locations.title':'Cartographie par localisation','card.locations.subtitle':'Indicateurs et répartition des statuts par site',
     'card.locations.compare.title':'Comparaison des sites','card.locations.compare.subtitle':'Interventions par localisation et statut',
@@ -2437,6 +2658,24 @@ const I18N = {
     'report.sec.depts.desc':'Détail des interventions actives par département',
     'report.sec.locations.title':'Cartographie par localisation',
     'report.sec.locations.desc':'Répartition des interventions par site',
+    'report.sec.history.title':'Historique des interventions réalisées',
+    'report.sec.history.desc':'Toutes les tâches clôturées sur la période, par mois',
+    'report.modal.only_history':'Historique seul',
+    'report.modal.equipment':'Équipements',
+    'report.modal.eq_all':'Tout le parc',
+    'report.modal.eq_all_label':'Tous les équipements ({n})',
+    'report.modal.eq_n_selected':'{n} équipement(s) sélectionné(s)',
+    'report.modal.eq_search':'Rechercher : ID, catégorie, service, site…',
+    'report.modal.eq_results':'{n} résultat(s)',
+    'report.modal.eq_check_visible':'Cocher les résultats',
+    'report.modal.eq_uncheck_visible':'Décocher les résultats',
+    'report.modal.eq_none_found':'Aucun équipement ne correspond à la recherche',
+    'report.modal.eq_hint':'Aucune sélection = rapport sur tout le parc.',
+    'report.modal.eq_interventions':'interv.',
+    'report.modal.eq_remove':'Retirer',
+    'report.sec.equipment.title':'Fiche par équipement',
+    'report.sec.equipment.desc':'Détail des interventions de chaque équipement sélectionné',
+    'report.sec.equipment.disabled':'Sélectionnez au moins un équipement ci-dessous',
     // Sidebar mobile / footer
   },
   en: {
@@ -2464,6 +2703,12 @@ const I18N = {
     'card.active.title':'Active interventions','card.active.subtitle':'Tasks in progress, awaiting parts or in service',
     'card.cat.title':'Equipment categories','card.cat.subtitle':'Fleet distribution',
     'card.kanban.title':'Intervention Kanban board','card.kanban.subtitle':'Operational status view',
+    'sidebar.hide':'Hide menu','sidebar.show':'Show menu','sidebar.open':'Open menu',
+    'kanban.view.label':'View','kanban.view.columns':'Columns','kanban.view.grid':'Grid',
+    'kanban.view.list':'List','kanban.view.compact':'Compact',
+    'kanban.list.status':'Status','kanban.list.equipment':'Equipment','kanban.list.category':'Category',
+    'kanban.list.task':'Task','kanban.list.tech':'Technician','kanban.list.location':'Location','kanban.list.duration':'Duration',
+    'kanban.none':'No active intervention for these filters',
     'card.deptsum.title':'Breakdown by service','card.deptsum.subtitle':'Active interventions totals per service',
     'card.locations.title':'Locations overview','card.locations.subtitle':'Indicators and status breakdown per site',
     'card.locations.compare.title':'Site comparison','card.locations.compare.subtitle':'Interventions per location and status',
@@ -2544,6 +2789,24 @@ const I18N = {
     'report.sec.depts.desc':'Active interventions detailed by department',
     'report.sec.locations.title':'Location breakdown',
     'report.sec.locations.desc':'Distribution of interventions per site',
+    'report.sec.history.title':'Completed interventions history',
+    'report.sec.history.desc':'Every task closed during the period, by month',
+    'report.modal.only_history':'History only',
+    'report.modal.equipment':'Equipment',
+    'report.modal.eq_all':'Whole fleet',
+    'report.modal.eq_all_label':'All equipment ({n})',
+    'report.modal.eq_n_selected':'{n} unit(s) selected',
+    'report.modal.eq_search':'Search: ID, category, service, site…',
+    'report.modal.eq_results':'{n} result(s)',
+    'report.modal.eq_check_visible':'Check results',
+    'report.modal.eq_uncheck_visible':'Uncheck results',
+    'report.modal.eq_none_found':'No equipment matches the search',
+    'report.modal.eq_hint':'No selection = report on the whole fleet.',
+    'report.modal.eq_interventions':'interv.',
+    'report.modal.eq_remove':'Remove',
+    'report.sec.equipment.title':'Equipment sheets',
+    'report.sec.equipment.desc':'Every intervention of each selected unit',
+    'report.sec.equipment.disabled':'Select at least one unit below',
   },
 };
 
@@ -2806,8 +3069,10 @@ function setLang(lang){
     if(typeof updateLiveIndicator === 'function') updateLiveIndicator(isOnline ? 'live' : 'offline');
     // If the report modal is currently open, re-render its dynamic parts so
     // the checkbox labels follow the new UI language.
+    if(typeof updateMenuBtnLabel === 'function') updateMenuBtnLabel();
     if(document.getElementById('reportModal')?.classList.contains('is-open')){
       renderReportCheckboxes();
+      renderEquipmentPicker();
       updateReportGenerateBtn();
     }
   }
@@ -2831,8 +3096,29 @@ function setSidebar(open){
   sidebar.classList.toggle('is-open', open);
   overlay.classList.toggle('is-visible', open);
 }
-menuBtn.addEventListener('click', () => setSidebar(true));
 overlay.addEventListener('click', () => setSidebar(false));
+
+// Desktop: the same button hides / shows the whole sidebar (state remembered)
+const SIDEBAR_KEY = 'maint.sidebarCollapsed';
+const isDesktop = () => window.innerWidth > 1024;
+function updateMenuBtnLabel(){
+  const collapsed = document.body.classList.contains('sidebar-collapsed');
+  const label = !isDesktop() ? t('sidebar.open') : (collapsed ? t('sidebar.show') : t('sidebar.hide'));
+  menuBtn.setAttribute('aria-label', label);
+  menuBtn.title = label;
+  menuBtn.setAttribute('aria-expanded', String(isDesktop() ? !collapsed : sidebar.classList.contains('is-open')));
+}
+function setSidebarCollapsed(collapsed){
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  safeStorage.set(SIDEBAR_KEY, collapsed ? '1' : '0');
+  updateMenuBtnLabel();
+}
+menuBtn.addEventListener('click', () => {
+  if(isDesktop()) setSidebarCollapsed(!document.body.classList.contains('sidebar-collapsed'));
+  else setSidebar(true);
+});
+window.addEventListener('resize', updateMenuBtnLabel);
+setSidebarCollapsed(safeStorage.get(SIDEBAR_KEY) === '1');
 
 /* ════════════════════════════════════════════════════════════════════
    VIEW SWITCHING
@@ -3574,6 +3860,79 @@ function renderDeptSummary(){
   }).join('');
 }
 
+// Display mode of the Kanban view: columns (board) | grid | list | compact
+const KANBAN_MODES = ['columns','grid','list','compact'];
+let kanbanMode = (() => {
+  const saved = safeStorage.get('maint.kanbanMode');
+  return KANBAN_MODES.includes(saved) ? saved : 'columns';
+})();
+function setKanbanMode(mode){
+  if(!KANBAN_MODES.includes(mode)) return;
+  kanbanMode = mode;
+  safeStorage.set('maint.kanbanMode', mode);
+  document.querySelectorAll('#kanbanModeControls [data-kmode]').forEach(b => {
+    const on = b.dataset.kmode === mode;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  renderKanban();
+}
+document.querySelectorAll('#kanbanModeControls [data-kmode]').forEach(b => {
+  b.addEventListener('click', () => setKanbanMode(b.dataset.kmode));
+});
+// Reflect the remembered mode on the switcher at load time
+document.querySelectorAll('#kanbanModeControls [data-kmode]').forEach(b => {
+  b.classList.toggle('is-active', b.dataset.kmode === kanbanMode);
+  b.setAttribute('aria-pressed', String(b.dataset.kmode === kanbanMode));
+});
+
+const kDurIcon = '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/></svg>';
+
+// Compact one-line card
+function kanbanCompactCardHTML(r, color){
+  return `
+    <div class="kanban-card kanban-card--compact" style="--col-bg:${color};--col-bg-strong:${color}" title="${escapeHTML(r.task || '')}">
+      <span class="kanban-card-id">#${escapeHTML(r.id)}</span>
+      <span class="kanban-card-task">${escapeHTML(r.task) || `<em style="color:var(--fg-3)">${t('no_description')}</em>`}</span>
+      <span class="kanban-card-duration">${formatDuration(r.durationHours)}</span>
+    </div>`;
+}
+
+// List mode: one table, grouped by status
+function renderKanbanList(board, cols, filtered){
+  if(filtered.length === 0){
+    board.innerHTML = `<div class="kanban-empty">${t('kanban.none')}</div>`;
+    return;
+  }
+  const body = cols.map(col => {
+    const rows = filtered.filter(r => r.kanbanKey === col.key)
+                         .sort((a,b) => (b.durationHours ?? -1) - (a.durationHours ?? -1));
+    if(rows.length === 0) return '';
+    return `
+      <tr class="klist-group" style="--col-bg:${col.color}"><td colspan="7">${escapeHTML(col.title)} · ${rows.length}</td></tr>
+      ${rows.map(r => `
+        <tr class="klist-row" style="--col-bg:${col.color}">
+          <td class="mono cell-strong">#${escapeHTML(r.id)}</td>
+          <td>${escapeHTML(r.category)}</td>
+          <td class="truncate" style="max-width:280px" title="${escapeHTML(r.task || '')}">${escapeHTML(r.task) || '—'}</td>
+          <td class="truncate" style="max-width:180px">${escapeHTML(techDisplay(r.technician))}</td>
+          <td>${escapeHTML(r.location)}</td>
+          <td class="mono dur-cell">${formatDuration(r.durationHours)}</td>
+          <td><span class="badge badge--${statusMeta(r.kanbanKey).color}">${escapeHTML(col.title)}</span></td>
+        </tr>`).join('')}`;
+  }).join('');
+  board.innerHTML = `
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead><tr>
+          <th>${t('kanban.list.equipment')}</th><th>${t('kanban.list.category')}</th><th>${t('kanban.list.task')}</th>
+          <th>${t('kanban.list.tech')}</th><th>${t('kanban.list.location')}</th><th>${t('kanban.list.duration')}</th><th>${t('kanban.list.status')}</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderKanban(){
   const board = document.getElementById('kanbanBoard');
   const cols = KANBAN_STATUSES.map(key => ({
@@ -3581,11 +3940,16 @@ function renderKanban(){
   }));
 
   const filtered = getKanbanFiltered();
+  board.className = `kanban kanban--${kanbanMode}`;
 
-  board.innerHTML = cols.map(col => {
+  if(kanbanMode === 'list'){ renderKanbanList(board, cols, filtered); return; }
+
+  const sections = cols.map(col => {
     const cards = filtered.filter(r => r.kanbanKey === col.key)
-                          .sort((a,b) => b.duration - a.duration);
-    const cardsHTML = cards.map(r => `
+                          .sort((a,b) => (b.durationHours ?? -1) - (a.durationHours ?? -1));
+    const cardsHTML = kanbanMode === 'compact'
+      ? (cards.map(r => kanbanCompactCardHTML(r, col.color)).join('') || `<div class="kanban-empty">${t('kanban.empty')}</div>`)
+      : cards.map(r => `
       <div class="kanban-card" style="--col-bg:${col.color};--col-bg-strong:${col.color}">
         <div class="kanban-card-top">
           <span class="kanban-card-id">#${escapeHTML(r.id)}</span>
@@ -3605,6 +3969,13 @@ function renderKanban(){
       </div>
     `).join('') || `<div class="kanban-empty">${t('kanban.empty')}</div>`;
 
+    if(kanbanMode === 'grid'){
+      return `
+        <section class="kgrid-group" style="--col-bg:${col.color}">
+          <div class="kgrid-head"><span class="kgrid-dot"></span>${col.title}<span class="kgrid-count">${cards.length}</span></div>
+          <div class="kgrid-cards">${cardsHTML}</div>
+        </section>`;
+    }
     return `
       <div class="kanban-col" style="--col-bg:${col.color}">
         <div class="kanban-head" style="--col-bg:${col.color};background:${col.color}">
@@ -3614,7 +3985,8 @@ function renderKanban(){
         <div class="kanban-body">${cardsHTML}</div>
       </div>
     `;
-  }).join('');
+  });
+  board.innerHTML = sections.join('');
 }
 // Location filter wiring — keep stable since elements pre-exist in HTML
 document.querySelectorAll('[data-loc-filter]').forEach(btn => {
@@ -4629,7 +5001,7 @@ document.addEventListener('visibilitychange', () => {
    ════════════════════════════════════════════════════════════════════ */
 function buildReportHTML(options){
   const opts = options || {};
-  const sectionDefaults = { summary:true, kpis:true, active:true, ranking:true, depts:true, locations:true };
+  const sectionDefaults = { summary:true, kpis:true, active:true, ranking:true, depts:true, locations:true, history:false, equipment:false };
   const sec = Object.assign({}, sectionDefaults, opts.sections || {});
   const range = opts.dateRange || { start:null, end:null };
   const reportLang = opts.lang || LANG;
@@ -4675,7 +5047,12 @@ function buildReportHTML(options){
     if(rEnd   && s > rEnd)   return false;
     return true;
   };
-  const FILTERED = DATA.filter(inRange);
+  // Equipment scope: empty list = whole fleet
+  const eqIds = Array.isArray(opts.equipmentIds) ? opts.equipmentIds.map(String) : [];
+  const eqSet = new Set(eqIds);
+  const inScope = (r) => eqSet.size === 0 || eqSet.has(String(r.id));
+  const SCOPE = DATA.filter(inScope);
+  const FILTERED = SCOPE.filter(inRange);
   // Rebuild equipment rollup over the filtered subset so the ranking section
   // reflects the requested period.
   const equipRollup = buildEquipmentRollup(FILTERED);
@@ -4693,7 +5070,8 @@ function buildReportHTML(options){
 
   const repairTasks = FILTERED.filter(r => r.durationHours > 0 && (r.statusKey === 'completed' || r.statusKey === 'maintenance'));
   const partsTasks  = FILTERED.filter(r => r.durationHours > 0 && r.statusKey === 'waiting_parts');
-  const avg = arr => arr.length ? (arr.reduce((s,r)=>s+r.durationHours,0)/arr.length) : 0;
+  // null when there is nothing to average → shown as "—"
+  const avg = arr => arr.length ? (arr.reduce((s,r)=>s+r.durationHours,0)/arr.length) : null;
 
   // Top equipment by total downtime (over filtered subset)
   const topEq = [...equipRollup].sort((a,b) => b.totalHours - a.totalHours).slice(0, 10);
@@ -4733,8 +5111,8 @@ function buildReportHTML(options){
 
   // Executive summary prose
   const summary = isFR
-    ? `Au ${dateFmt.format(now)}, le parc compte <strong>${totalEq} équipements</strong> répartis sur ${Object.keys(locStats).length} sites. La disponibilité globale s'établit à <strong>${dispo}%</strong>, avec <strong>${operational}</strong> unités opérationnelles et <strong>${active}</strong> en intervention active. ${inParts} intervention${inParts>1?'s sont':' est'} actuellement bloquée${inParts>1?'s':''} en attente de pièces de rechange, ce qui représente le principal axe d'amélioration. La durée moyenne d'une réparation corrective est de <strong>${fmtHours(avg(repairTasks))}</strong>, contre <strong>${fmtHours(avg(partsTasks))}</strong> pour les arrêts liés à l'approvisionnement.`
-    : `As of ${dateFmt.format(now)}, the fleet comprises <strong>${totalEq} units</strong> across ${Object.keys(locStats).length} sites. Overall availability stands at <strong>${dispo}%</strong>, with <strong>${operational}</strong> operational units and <strong>${active}</strong> in active intervention. ${inParts} intervention${inParts>1?'s are':' is'} currently blocked awaiting spare parts — the primary area for improvement. Mean corrective repair time is <strong>${fmtHours(avg(repairTasks))}</strong> versus <strong>${fmtHours(avg(partsTasks))}</strong> for parts-related stoppages.`;
+    ? `Au ${dateFmt.format(now)}, ${eqSet.size ? 'la sélection' : 'le parc'} compte <strong>${totalEq} équipement${totalEq > 1 ? 's' : ''}</strong> répartis sur ${Object.keys(locStats).length} sites. La disponibilité globale s'établit à <strong>${dispo}%</strong>, avec <strong>${operational}</strong> unités opérationnelles et <strong>${active}</strong> en intervention active. ${inParts} intervention${inParts>1?'s sont':' est'} actuellement bloquée${inParts>1?'s':''} en attente de pièces de rechange, ce qui représente le principal axe d'amélioration. La durée moyenne d'une réparation corrective est de <strong>${fmtHours(avg(repairTasks))}</strong>, contre <strong>${fmtHours(avg(partsTasks))}</strong> pour les arrêts liés à l'approvisionnement.`
+    : `As of ${dateFmt.format(now)}, ${eqSet.size ? 'the selection' : 'the fleet'} comprises <strong>${totalEq} unit${totalEq > 1 ? 's' : ''}</strong> across ${Object.keys(locStats).length} sites. Overall availability stands at <strong>${dispo}%</strong>, with <strong>${operational}</strong> operational units and <strong>${active}</strong> in active intervention. ${inParts} intervention${inParts>1?'s are':' is'} currently blocked awaiting spare parts — the primary area for improvement. Mean corrective repair time is <strong>${fmtHours(avg(repairTasks))}</strong> versus <strong>${fmtHours(avg(partsTasks))}</strong> for parts-related stoppages.`;
 
   // ── Build sections conditionally ──
   // Section numbering is dynamic: only included sections get sequential numbers.
@@ -4893,11 +5271,164 @@ function buildReportHTML(options){
       </table>
     </section>`;
 
+  // ── History of completed interventions ──
+  // Filtered on the CLOSING date (end date, or start date when no end date is
+  // recorded) so "period" means "work finished during the period".
+  const historyRows = !sec.history ? [] : SCOPE
+    .filter(r => r.statusKey === 'completed')
+    .map(r => ({ r, ref: r.endDate || r.startDate || null }))
+    .filter(({ ref }) => {
+      if(!rStart && !rEnd) return true;
+      if(!ref) return false;
+      const d = parseDate(ref);
+      if(!d) return false;
+      if(rStart && d < rStart) return false;
+      if(rEnd && d > rEnd) return false;
+      return true;
+    })
+    .sort((a, b) => (b.ref || '').localeCompare(a.ref || '') || String(a.r.id).localeCompare(String(b.r.id)));
+  const monthFmt = new Intl.DateTimeFormat(isFR ? 'fr-FR' : 'en-GB', { month:'long', year:'numeric' });
+  const dayFmt = new Intl.DateTimeFormat(isFR ? 'fr-FR' : 'en-GB', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const sumH = rows => rows.reduce((s, x) => s + (x.r.durationHours || 0), 0);
+  const withDur = historyRows.filter(x => x.r.durationHours != null);
+  const historyGroups = [];
+  historyRows.forEach(x => {
+    const key = x.ref ? x.ref.slice(0, 7) : 'none';
+    let g = historyGroups[historyGroups.length - 1];
+    if(!g || g.key !== key){ g = { key, rows: [] }; historyGroups.push(g); }
+    g.rows.push(x);
+  });
+  const monthLabel = key => {
+    if(key === 'none') return L('Date de clôture non renseignée', 'No closing date');
+    const [y, m] = key.split('-');
+    const s = monthFmt.format(new Date(+y, +m - 1, 1));
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  };
+
+  const sectionHistory = !sec.history ? '' : `
+    <section class="section section--long">
+      <h2>${num()}. ${L('Historique des interventions réalisées','Completed interventions history')}</h2>
+      <div class="history-stats">
+        <div><strong>${historyRows.length}</strong> ${L('interventions réalisées','completed interventions')}</div>
+        <div><strong>${new Set(historyRows.map(x => x.r.id)).size}</strong> ${L('équipements','units')}</div>
+        <div>${L('Durée cumulée','Total duration')} : <strong>${fmtHours(sumH(withDur))}</strong></div>
+        <div>${L('Durée moyenne','Average duration')} : <strong>${withDur.length ? fmtHours(sumH(withDur) / withDur.length) : '—'}</strong></div>
+      </div>
+      <p class="history-note">${L('Classées par date de clôture, de la plus récente à la plus ancienne.','Sorted by closing date, most recent first.')}</p>
+      <table class="history-table">
+        <colgroup><col class="c-date"><col class="c-eq"><col class="c-cat"><col class="c-svc"><col class="c-site"><col><col class="c-tech"><col class="c-dur"></colgroup>
+        <thead>
+          <tr>
+            <th>${L('Clôture','Closed')}</th>
+            <th>${L('Équipement','Equipment')}</th>
+            <th>${L('Catégorie','Category')}</th>
+            <th>${L('Service','Service')}</th>
+            <th>${L('Site','Site')}</th>
+            <th>${L('Tâche réalisée','Work done')}</th>
+            <th>${L('Technicien','Technician')}</th>
+            <th>${L('Durée','Duration')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${historyRows.length === 0
+            ? `<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:24px;font-style:italic">${L('Aucune intervention réalisée sur cette période','No completed intervention in this period')}</td></tr>`
+            : historyGroups.map(g => `
+              <tr class="month-row"><td colspan="8">${escapeHTML(monthLabel(g.key))} · ${g.rows.length} ${L('intervention' + (g.rows.length > 1 ? 's' : ''), 'intervention' + (g.rows.length > 1 ? 's' : ''))} · ${fmtHours(sumH(g.rows))}</td></tr>
+              ${g.rows.map(({ r, ref }) => `<tr>
+                <td class="num">${ref ? dayFmt.format(parseDate(ref)) : '—'}</td>
+                <td><strong>#${escapeHTML(r.id)}</strong></td>
+                <td>${escapeHTML(r.category)}</td>
+                <td>${escapeHTML(deptLabelLocal(r.department))}</td>
+                <td>${escapeHTML(r.location)}</td>
+                <td>${escapeHTML(r.task || '—')}</td>
+                <td>${escapeHTML(r.technician && r.technician !== 'Non assigné' ? r.technician : L('Non assigné','Unassigned'))}</td>
+                <td class="num">${fmtHours(r.durationHours)}</td>
+              </tr>`).join('')}`).join('')}
+        </tbody>
+      </table>
+    </section>`;
+
+  // A report containing only the history gets a matching title
+  // ── Equipment sheets: one block per selected unit ──
+  const natural = (a, b) => String(a).localeCompare(String(b), undefined, { numeric:true });
+  const sectionEquipment = (!sec.equipment || eqSet.size === 0) ? '' : (() => {
+    const sheets = [...eqSet].sort(natural).map(id => {
+      const all = SCOPE.filter(r => String(r.id) === id);              // whole history (for current status)
+      const recs = FILTERED.filter(r => String(r.id) === id)            // period
+        .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+      const first = all[0] || {};
+      const active = all.filter(r => r.statusKey !== 'completed')
+        .sort((a, b) => (b.startDate || '').localeCompare(a.startDate || ''));
+      const current = active.length ? statusMetaLocal(active[0].kanbanKey) : statusMetaLocal('completed');
+      const withD = recs.filter(r => r.durationHours != null);
+      const cum = withD.reduce((s, r) => s + r.durationHours, 0);
+      const done = recs.filter(r => r.statusKey === 'completed').length;
+      const last = recs.find(r => r.startDate);
+      return `
+        <div class="eq-sheet">
+          <div class="eq-sheet-head">
+            <div>
+              <div class="eq-sheet-id">#${escapeHTML(id)} <span>— ${escapeHTML(first.category || '—')}</span></div>
+              <div class="eq-sheet-meta">${escapeHTML(deptLabelLocal(first.department))} · ${escapeHTML(first.location || '—')}</div>
+            </div>
+            <span class="pill pill--${current.color}">${escapeHTML(current.short)}</span>
+          </div>
+          <div class="eq-sheet-stats">
+            <div><span>${L('Interventions','Interventions')}</span><strong>${recs.length}</strong></div>
+            <div><span>${L('Réalisées','Completed')}</span><strong>${done}</strong></div>
+            <div><span>${L('En cours','Open')}</span><strong>${recs.length - done}</strong></div>
+            <div><span>${L('Durée cumulée','Total duration')}</span><strong>${fmtHours(cum)}</strong></div>
+            <div><span>${L('Dernière intervention','Last intervention')}</span><strong>${last ? dayFmt.format(parseDate(last.startDate)) : '—'}</strong></div>
+          </div>
+          <table class="eq-sheet-table">
+            <colgroup><col class="c-date"><col class="c-date"><col><col class="c-tech"><col class="c-dur"><col class="c-status"></colgroup>
+            <thead><tr>
+              <th>${L('Début','Start')}</th><th>${L('Fin','End')}</th><th>${L('Tâche','Task')}</th>
+              <th>${L('Technicien','Technician')}</th><th>${L('Durée','Duration')}</th><th>${L('Statut','Status')}</th>
+            </tr></thead>
+            <tbody>
+              ${recs.length === 0
+                ? `<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:14px;font-style:italic">${L('Aucune intervention sur cette période','No intervention in this period')}</td></tr>`
+                : recs.map(r => {
+                    const m = statusMetaLocal(r.kanbanKey);
+                    return `<tr>
+                      <td class="num">${r.startDate ? dayFmt.format(parseDate(r.startDate)) : '—'}</td>
+                      <td class="num">${r.endDate ? dayFmt.format(parseDate(r.endDate)) : '—'}</td>
+                      <td>${escapeHTML(r.task || '—')}</td>
+                      <td>${escapeHTML(r.technician && r.technician !== 'Non assigné' ? r.technician : L('Non assigné','Unassigned'))}</td>
+                      <td class="num">${fmtHours(r.durationHours)}</td>
+                      <td><span class="pill pill--${m.color}">${escapeHTML(m.short)}</span></td>
+                    </tr>`;
+                  }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+    }).join('');
+    return `
+    <section class="section section--long">
+      <h2>${num()}. ${L('Fiche par équipement','Equipment sheets')}</h2>
+      ${sheets}
+    </section>`;
+  })();
+
+  const onlyHistory = sec.history && !['summary','kpis','active','ranking','depts','locations','equipment'].some(k => sec[k]);
+  const docTitle = onlyHistory
+    ? L('Historique des interventions réalisées','Completed interventions history')
+    : eqSet.size === 1
+      ? L(`Rapport équipement #${eqIds[0]}`, `Equipment report #${eqIds[0]}`)
+      : eqSet.size > 1
+        ? L('Rapport par équipement','Equipment report')
+        : L('Rapport de maintenance','Maintenance Report');
+  const sortedEq = [...eqSet].sort(natural);
+  const scopeLabel = eqSet.size === 0
+    ? L('Tout le parc','Whole fleet')
+    : `${eqSet.size} — ${sortedEq.slice(0, 12).map(id => '#' + escapeHTML(id)).join(', ')}${eqSet.size > 12 ? ' ' + L(`et ${eqSet.size - 12} autres`, `and ${eqSet.size - 12} more`) : ''}`;
+
   return `<!DOCTYPE html>
 <html lang="${reportLang}">
 <head>
 <meta charset="UTF-8">
-<title>${L('Rapport de maintenance','Maintenance Report')} — ${dateFmt.format(now)}</title>
+<title>${docTitle} — ${dateFmt.format(now)}</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{
@@ -4986,11 +5517,57 @@ function buildReportHTML(options){
   .actions .secondary{background:#475569}
   .actions .secondary:hover{background:#334155}
 
+  .history-stats{
+    display:flex;flex-wrap:wrap;gap:8px 24px;
+    background:#f1f5f9;border-left:4px solid #059669;border-radius:0 6px 6px 0;
+    padding:12px 16px;font-size:12.5px;margin-bottom:8px;
+  }
+  .history-note{font-size:11px;color:#64748b;margin-bottom:10px;font-style:italic}
+  .eq-sheet{border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:18px;page-break-inside:avoid}
+  .eq-sheet-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:10px}
+  .eq-sheet-id{font-size:16px;font-weight:700;color:#0e7490}
+  .eq-sheet-id span{color:#334155;font-weight:600}
+  .eq-sheet-meta{font-size:12px;color:#64748b;margin-top:2px}
+  .eq-sheet-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px}
+  .eq-sheet-stats div{background:#f8fafc;border-radius:6px;padding:8px 10px}
+  .eq-sheet-stats span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#64748b;margin-bottom:2px}
+  .eq-sheet-stats strong{font-size:12.5px;color:#1a1f36}
+  .eq-sheet-table{table-layout:fixed;width:100%}
+  .eq-sheet-table th,.eq-sheet-table td{padding:6px 6px;font-size:11px;vertical-align:top;overflow-wrap:break-word}
+  .eq-sheet-table td.num{white-space:nowrap;font-size:10.5px}
+  .eq-sheet-table col.c-date{width:76px}
+  .eq-sheet-table col.c-tech{width:96px}
+  .eq-sheet-table col.c-dur{width:108px}
+  .eq-sheet-table col.c-status{width:96px}
+  .history-table{table-layout:fixed;width:100%}
+  .history-table th,.history-table td{padding:7px 6px;font-size:11px;vertical-align:top;overflow-wrap:break-word}
+  .history-table th{font-size:9.5px}
+  .history-table td.num{white-space:nowrap;overflow-wrap:normal;font-size:10.5px}
+  .history-table col.c-date{width:74px}
+  .history-table col.c-eq{width:74px}
+  .history-table col.c-cat{width:88px}
+  .history-table col.c-svc{width:74px}
+  .history-table col.c-site{width:70px}
+  .history-table col.c-tech{width:88px}
+  .history-table col.c-dur{width:108px}
+  .history-table .month-row td{
+    background:#ecfdf5;color:#065f46;font-weight:700;font-size:11.5px;
+    letter-spacing:.02em;border-top:2px solid #a7f3d0;
+  }
   @media print {
     body{background:#fff;padding:0}
     .doc{box-shadow:none;border-radius:0;max-width:100%}
     .actions{display:none}
     .section{page-break-inside:avoid}
+    .section--long{page-break-inside:auto}
+    thead{display:table-header-group}
+    tr{page-break-inside:avoid}
+    /* Fit every table on an A4 page */
+    .doc-head{padding:22px 24px}
+    .doc-body{padding:22px 20px}
+    table{width:100%}
+    th,td{padding:6px 5px !important;font-size:9.5px !important}
+    .pill{font-size:9px;padding:2px 6px}
   }
 </style>
 </head>
@@ -5003,11 +5580,12 @@ function buildReportHTML(options){
 <div class="doc">
   <header class="doc-head">
     <div>
-      <h1>${L('Rapport de maintenance','Maintenance Report')}</h1>
+      <h1>${docTitle}</h1>
       <div class="meta">
         ${L('Site','Site')} : <strong>KCC</strong><br>
         ${L('Édité le','Issued on')} : ${dateFmt.format(now)} ${L('à','at')} ${timeFmt.format(now)}<br>
         ${L('Période couverte','Period covered')} : ${periodLabel}<br>
+        ${L('Équipements','Equipment')} : ${scopeLabel}<br>
         <em style="color:#94a3b8;font-size:11.5px">${L('Durées issues de la colonne « Durée travaux /jour/heure »','Durations taken from the “Durée travaux /jour/heure” column')}</em>
       </div>
     </div>
@@ -5022,6 +5600,8 @@ function buildReportHTML(options){
     ${sectionRanking}
     ${sectionDepts}
     ${sectionLocations}
+    ${sectionHistory}
+    ${sectionEquipment}
 
     <div class="signature">
       <div class="sig-block">
@@ -5074,10 +5654,14 @@ function generateReport(options){
    The "Generate report" sidebar button now opens this modal so the user
    picks sections, period and language before the document is built.
    ════════════════════════════════════════════════════════════════════ */
-const REPORT_SECTIONS = ['summary','kpis','active','ranking','depts','locations'];
+const REPORT_SECTIONS = ['summary','kpis','active','ranking','depts','locations','history','equipment'];
 // State for the modal (preserved between opens for convenience)
 let reportModalState = {
-  sections: REPORT_SECTIONS.reduce((o, k) => (o[k] = true, o), {}),
+  // The history can be long, so it is opt-in
+  // The history can be long, so it is opt-in; equipment sheets need a selection
+  sections: REPORT_SECTIONS.reduce((o, k) => (o[k] = k !== 'history' && k !== 'equipment', o), {}),
+  equipment: new Set(),    // selected equipment IDs (empty = whole fleet)
+  eqQuery: '',
   periodPreset: 'all',     // 'all' | '30' | '90' | '365' | 'custom'
   dateStart: null,         // ISO date string when in custom mode
   dateEnd:   null,
@@ -5087,7 +5671,12 @@ let reportModalState = {
 function openReportModal(){
   // Initialise lang to current UI language if it's the first time
   if(reportModalState.lang == null) reportModalState.lang = LANG;
+  // Drop selected IDs that no longer exist after a live refresh
+  const known = new Set(byEquipment.map(e => e.id));
+  [...reportModalState.equipment].forEach(id => { if(!known.has(id)) reportModalState.equipment.delete(id); });
+  syncEquipmentSection();
   renderReportCheckboxes();
+  renderEquipmentPicker();
   renderReportPeriod();
   renderReportLangButtons();
   document.getElementById('reportModal').classList.add('is-open');
@@ -5100,15 +5689,19 @@ function closeReportModal(){
 
 function renderReportCheckboxes(){
   const grid = document.getElementById('reportCheckGrid');
-  const items = REPORT_SECTIONS.map(key => ({
-    key,
-    label: t(`report.sec.${key}.title`),
-    desc: t(`report.sec.${key}.desc`),
-    checked: !!reportModalState.sections[key],
-  }));
+  const noEq = reportModalState.equipment.size === 0;
+  const items = REPORT_SECTIONS.map(key => {
+    const disabled = key === 'equipment' && noEq;
+    return {
+      key, disabled,
+      label: t(`report.sec.${key}.title`),
+      desc: disabled ? t('report.sec.equipment.disabled') : t(`report.sec.${key}.desc`),
+      checked: !disabled && !!reportModalState.sections[key],
+    };
+  });
   grid.innerHTML = items.map(it => `
-    <label class="report-check ${it.checked ? 'is-checked' : ''}" data-sec="${it.key}">
-      <input type="checkbox" ${it.checked ? 'checked' : ''} />
+    <label class="report-check ${it.checked ? 'is-checked' : ''} ${it.disabled ? 'is-disabled' : ''}" data-sec="${it.key}" ${it.disabled ? 'aria-disabled="true"' : ''}>
+      <input type="checkbox" ${it.checked ? 'checked' : ''} ${it.disabled ? 'disabled' : ''} />
       <span class="report-check-mark">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </span>
@@ -5123,6 +5716,7 @@ function renderReportCheckboxes(){
   grid.querySelectorAll('.report-check').forEach(el => {
     const input = el.querySelector('input');
     el.addEventListener('click', (e) => {
+      if(el.classList.contains('is-disabled')){ e.preventDefault(); return; }
       // Prevent double-toggle (the native input click also bubbles)
       if(e.target.tagName !== 'INPUT'){
         e.preventDefault();
@@ -5179,6 +5773,95 @@ function renderReportLangButtons(){
   });
 }
 
+// ── Equipment picker ──
+// "Equipment sheets" only makes sense with a selection: switch it on when the
+// first unit is picked, off when the selection is emptied.
+function syncEquipmentSection(prevSize){
+  const n = reportModalState.equipment.size;
+  if(n === 0) reportModalState.sections.equipment = false;
+  else if(prevSize === 0) reportModalState.sections.equipment = true;
+}
+// Searchable text per unit: every category, service and site it has had
+// (a unit can move between sites), plus its ID with and without "#".
+function eqSearchIndex(){
+  const idx = new Map();
+  DATA.forEach(r => {
+    const id = String(r.id);
+    if(!idx.has(id)) idx.set(id, new Set([id, '#' + id]));
+    const s = idx.get(id);
+    [r.category, r.department, deptLabel(r.department), r.location].forEach(v => v && s.add(v));
+  });
+  return new Map([...idx].map(([id, s]) => [id, [...s].join(' ').toLowerCase()]));
+}
+function equipmentMatches(){
+  const q = reportModalState.eqQuery.trim().toLowerCase();
+  const terms = q.split(/\s+/).filter(Boolean);
+  const idx = terms.length ? eqSearchIndex() : null;
+  return [...byEquipment]
+    .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric:true }))
+    .filter(e => !idx || terms.every(term => (idx.get(String(e.id)) || '').includes(term)));
+}
+function renderEquipmentPicker(){
+  const sel = reportModalState.equipment;
+  const total = byEquipment.length;
+  document.getElementById('eqPickerLabel').textContent = sel.size === 0
+    ? t('report.modal.eq_all_label').replace('{n}', total)
+    : t('report.modal.eq_n_selected').replace('{n}', sel.size);
+  const search = document.getElementById('eqSearch');
+  search.placeholder = t('report.modal.eq_search');
+  if(document.activeElement !== search) search.value = reportModalState.eqQuery;
+
+  const list = document.getElementById('eqList');
+  const keepScroll = list.scrollTop;   // ticking a box must not jump back to the top
+  const rows = equipmentMatches();
+  document.getElementById('eqResultCount').textContent = t('report.modal.eq_results').replace('{n}', rows.length);
+  list.innerHTML = rows.length === 0
+    ? `<div class="eq-empty">${escapeHTML(t('report.modal.eq_none_found'))}</div>`
+    : rows.map(e => {
+        const on = sel.has(e.id);
+        return `
+          <label class="eq-item ${on ? 'is-checked' : ''}" data-eq="${escapeHTML(e.id)}">
+            <input type="checkbox" ${on ? 'checked' : ''} />
+            <span class="eq-id">#${escapeHTML(e.id)}</span>
+            <span class="eq-meta">${escapeHTML(e.category)}<small>${escapeHTML(deptLabel(e.department))} · ${escapeHTML(e.location)}</small></span>
+            <span class="eq-count"><span class="eq-dot ${e.activeTasks > 0 ? 'eq-dot--active' : ''}"></span>${e.tasks} ${escapeHTML(t('report.modal.eq_interventions'))}</span>
+          </label>`;
+      }).join('');
+  list.querySelectorAll('.eq-item input').forEach(input => {
+    input.addEventListener('change', () => {
+      const id = input.closest('.eq-item').dataset.eq;
+      setEquipmentSelected([id], input.checked);
+    });
+  });
+  list.scrollTop = keepScroll;
+
+  document.querySelector('.eq-hint').hidden = sel.size > 0;
+  // Selected units shown as removable chips
+  const chips = document.getElementById('eqSelected');
+  chips.innerHTML = [...sel]
+    .sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric:true }))
+    .map(id => `<span class="eq-chip">#${escapeHTML(id)}<button type="button" data-eq-remove="${escapeHTML(id)}" aria-label="${escapeHTML(t('report.modal.eq_remove'))} #${escapeHTML(id)}">×</button></span>`)
+    .join('');
+  chips.querySelectorAll('[data-eq-remove]').forEach(b => {
+    b.addEventListener('click', () => setEquipmentSelected([b.dataset.eqRemove], false));
+  });
+}
+function setEquipmentSelected(ids, on){
+  const prev = reportModalState.equipment.size;
+  ids.forEach(id => on ? reportModalState.equipment.add(id) : reportModalState.equipment.delete(id));
+  syncEquipmentSection(prev);
+  renderEquipmentPicker();
+  renderReportCheckboxes();
+  updateReportGenerateBtn();
+}
+function setEquipmentPickerOpen(open){
+  const picker = document.getElementById('eqPicker');
+  picker.classList.toggle('is-open', open);
+  document.getElementById('eqPickerPanel').hidden = !open;
+  document.getElementById('eqPickerToggle').setAttribute('aria-expanded', String(open));
+  if(open) setTimeout(() => document.getElementById('eqSearch').focus(), 0);
+}
+
 function updateReportGenerateBtn(){
   const anyChecked = REPORT_SECTIONS.some(k => reportModalState.sections[k]);
   const btn = document.getElementById('reportGenerateBtn');
@@ -5197,6 +5880,34 @@ function wireReportModal(){
     if(e.target.id === 'reportModal') closeReportModal();
   });
 
+  // Equipment picker
+  document.getElementById('eqPickerToggle').addEventListener('click', () => {
+    setEquipmentPickerOpen(!document.getElementById('eqPicker').classList.contains('is-open'));
+  });
+  const eqSearch = document.getElementById('eqSearch');
+  eqSearch.addEventListener('input', () => {
+    reportModalState.eqQuery = eqSearch.value;
+    renderEquipmentPicker();
+  });
+  eqSearch.addEventListener('keydown', (e) => {
+    // Escape clears the search first, then folds the list — without closing the modal
+    if(e.key === 'Escape'){
+      e.stopPropagation();
+      if(eqSearch.value){ eqSearch.value = ''; reportModalState.eqQuery = ''; renderEquipmentPicker(); }
+      else { setEquipmentPickerOpen(false); document.getElementById('eqPickerToggle').focus(); }
+    }
+    if(e.key === 'Enter') e.preventDefault();
+  });
+  document.getElementById('eqCheckVisible').addEventListener('click', () => {
+    setEquipmentSelected(equipmentMatches().map(e => e.id), true);
+  });
+  document.getElementById('eqUncheckVisible').addEventListener('click', () => {
+    setEquipmentSelected(equipmentMatches().map(e => e.id), false);
+  });
+  document.getElementById('eqClearAll').addEventListener('click', () => {
+    setEquipmentSelected([...reportModalState.equipment], false);
+  });
+
   // Escape closes
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape' && document.getElementById('reportModal').classList.contains('is-open')){
@@ -5207,6 +5918,12 @@ function wireReportModal(){
   // Bulk select / clear
   document.getElementById('reportSelectAll').addEventListener('click', () => {
     REPORT_SECTIONS.forEach(k => reportModalState.sections[k] = true);
+    syncEquipmentSection();
+    renderReportCheckboxes();
+    updateReportGenerateBtn();
+  });
+  document.getElementById('reportOnlyHistory').addEventListener('click', () => {
+    REPORT_SECTIONS.forEach(k => reportModalState.sections[k] = (k === 'history'));
     renderReportCheckboxes();
     updateReportGenerateBtn();
   });
@@ -5260,6 +5977,7 @@ function wireReportModal(){
       sections: { ...reportModalState.sections },
       dateRange: { start: range.start, end: range.end },
       lang: reportModalState.lang || LANG,
+      equipmentIds: [...reportModalState.equipment],
     };
     closeReportModal();
     generateReport(options);
